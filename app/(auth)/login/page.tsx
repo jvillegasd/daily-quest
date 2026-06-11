@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -17,20 +17,14 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError(error.message)
-    else window.location.href = '/dashboard'
-    setLoading(false)
+    const res = await signIn('credentials', { email, password, redirect: false })
+    if (res?.error) { setError('Invalid email or password'); setLoading(false); return }
+    window.location.href = '/dashboard'
   }
 
   async function handleGoogle() {
     setLoading(true)
-    const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
-    })
+    await signIn('google', { callbackUrl: '/dashboard' })
   }
 
   return (
@@ -54,22 +48,8 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleEmailLogin} className="space-y-4">
-        <Input
-          label="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="hero@realm.com"
-          required
-        />
-        <Input
-          label="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-          required
-        />
+        <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="hero@realm.com" required />
+        <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
         {error && <p className="text-sm text-ruby">{error}</p>}
         <Button type="submit" className="w-full" size="lg" loading={loading}>
           Begin Adventure
@@ -78,9 +58,7 @@ export default function LoginPage() {
 
       <p className="text-center text-sm text-fg-muted mt-4">
         No account?{' '}
-        <Link href="/signup" className="text-gold hover:text-gold-bright font-semibold">
-          Create one
-        </Link>
+        <Link href="/signup" className="text-gold hover:text-gold-bright font-semibold">Create one</Link>
       </p>
     </Card>
   )

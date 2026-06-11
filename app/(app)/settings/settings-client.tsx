@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, LevelBadge } from '@/components/layout/avatar'
 import { Badge } from '@/components/ui/badge'
-import { createClient } from '@/lib/supabase/client'
+import { signOut } from 'next-auth/react'
 import type { Profile, NotificationPreference, NotificationEvent } from '@/lib/types'
 
 const EVENT_LABELS: Record<NotificationEvent, string> = {
@@ -73,9 +73,7 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
   }
 
   async function handleSignOut() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    window.location.href = '/login'
+    await signOut({ callbackUrl: '/login' })
   }
 
   return (

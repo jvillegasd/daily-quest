@@ -1,14 +1,10 @@
-import { createClient } from '@/lib/supabase/server'
-import { db } from '@/lib/db/implementation'
 import { redirect } from 'next/navigation'
+import { getProfile } from '@/lib/auth/get-profile'
+import { db } from '@/lib/db/implementation'
 import { DashboardClient } from './dashboard-client'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const profile = await db.profiles.findByUserId(user.id)
+  const profile = await getProfile()
   if (!profile?.householdId) redirect('/login')
 
   const [tasks, rewards, members, household] = await Promise.all([
@@ -18,13 +14,5 @@ export default async function DashboardPage() {
     db.households.findById(profile.householdId),
   ])
 
-  return (
-    <DashboardClient
-      profile={profile}
-      tasks={tasks}
-      rewards={rewards}
-      members={members}
-      household={household!}
-    />
-  )
+  return <DashboardClient profile={profile} tasks={tasks} rewards={rewards} members={members} household={household!} />
 }

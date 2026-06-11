@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Cinzel, Nunito } from 'next/font/google'
-import { ThemeProvider } from 'next-themes'
+import { Providers } from '@/components/providers'
 import { PWARegister } from '@/components/layout/pwa-register'
 import './globals.css'
 
@@ -22,11 +22,7 @@ export const metadata: Metadata = {
   title: 'Daily Quest',
   description: 'Gamified household task tracker for your party',
   manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Daily Quest',
-  },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Daily Quest' },
 }
 
 export const viewport: Viewport = {
@@ -40,19 +36,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${cinzel.variable} ${nunito.variable} h-full`}
-    >
+    <html lang="en" suppressHydrationWarning className={`${cinzel.variable} ${nunito.variable} h-full`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
       </head>
       <body className="min-h-full antialiased font-body bg-bg text-fg">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange={false}>
+        <Providers>
           <PWARegister />
           {children}
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   )

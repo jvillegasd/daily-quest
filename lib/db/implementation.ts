@@ -1,6 +1,5 @@
 import { prisma } from './prisma'
 import type { Database } from './index'
-import type { CreateTaskInput, CreateRewardInput } from '@/lib/types'
 import { DEFAULT_CATEGORIES, getLevelFromPoints } from '@/lib/types'
 
 export const db: Database = {
@@ -138,11 +137,7 @@ export const db: Database = {
     async findPendingDue(householdId, withinHours) {
       const deadline = new Date(Date.now() + withinHours * 60 * 60 * 1000)
       return prisma.task.findMany({
-        where: {
-          householdId,
-          status: 'PENDING',
-          dueAt: { lte: deadline },
-        },
+        where: { householdId, status: 'PENDING', dueAt: { lte: deadline } },
         include: { assignedTo: true },
       })
     },
@@ -152,9 +147,7 @@ export const db: Database = {
     async findByHousehold(householdId) {
       return prisma.reward.findMany({
         where: { householdId },
-        include: {
-          claims: { orderBy: { claimedAt: 'desc' }, take: 1 },
-        },
+        include: { claims: { orderBy: { claimedAt: 'desc' }, take: 1 } },
         orderBy: { createdAt: 'desc' },
       })
     },

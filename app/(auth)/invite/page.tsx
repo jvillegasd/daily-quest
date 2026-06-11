@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -30,26 +30,22 @@ function InviteForm() {
     if (!token) return
     setLoading(true)
     setError('')
-    const supabase = createClient()
-    const { data, error: signupError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: name } },
+
+    const reg = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name }),
     })
+    if (!reg.ok) { const d = await reg.json(); setError(d.error ?? 'Signup failed'); setLoading(false); return }
 
-    if (signupError || !data.user) {
-      setError(signupError?.message ?? 'Signup failed')
-      setLoading(false)
-      return
-    }
+    await signIn('credentials', { email, password, redirect: false })
 
-    const res = await fetch('/api/invite/accept', {
+    const accept = await fetch('/api/invite/accept', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     })
-
-    if (!res.ok) { setError('Failed to join household'); setLoading(false); return }
+    if (!accept.ok) { setError('Failed to join household'); setLoading(false); return }
     window.location.href = '/dashboard'
   }
 
@@ -58,18 +54,14 @@ function InviteForm() {
       <div className="text-center mb-6">
         <div className="text-3xl mb-2">🏰</div>
         <h2 className="font-quest text-xl font-bold text-fg">You&apos;re Invited!</h2>
-        {householdName && (
-          <p className="text-fg-muted text-sm mt-1">Join <span className="text-gold font-semibold">{householdName}</span></p>
-        )}
+        {householdName && <p className="text-fg-muted text-sm mt-1">Join <span className="text-gold font-semibold">{householdName}</span></p>}
       </div>
       <form onSubmit={handleAccept} className="space-y-4">
         <Input label="Your Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Hero Name" required />
         <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="hero@realm.com" required />
         <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" minLength={6} required />
         {error && <p className="text-sm text-ruby">{error}</p>}
-        <Button type="submit" className="w-full" size="lg" loading={loading}>
-          🏰 Join the Household
-        </Button>
+        <Button type="submit" className="w-full" size="lg" loading={loading}>🏰 Join the Household</Button>
       </form>
     </Card>
   )
