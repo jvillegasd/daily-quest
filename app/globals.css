@@ -1,26 +1,181 @@
 @import "tailwindcss";
 
+/* ─── RPG Design Tokens ────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light mode — warm parchment */
+  --bg:          #fdf6e3;
+  --bg-card:     #fff8e7;
+  --bg-elevated: #fffdf5;
+  --border:      #e8d5a3;
+  --border-strong: #c9a84c;
+
+  --fg:          #3b2a14;
+  --fg-muted:    #7c6245;
+  --fg-subtle:   #a08858;
+
+  --gold:        #c9a84c;
+  --gold-bright: #e6b84a;
+  --gold-dim:    #a08040;
+  --brown:       #7c4f2a;
+  --brown-light: #b07040;
+
+  --emerald:     #16a34a;
+  --amber:       #d97706;
+  --ruby:        #dc2626;
+  --sapphire:    #2563eb;
+
+  --shadow-sm:   0 1px 3px rgba(100,70,20,0.12);
+  --shadow-md:   0 4px 12px rgba(100,70,20,0.16);
+  --shadow-lg:   0 8px 32px rgba(100,70,20,0.20);
+  --shadow-gold: 0 0 20px rgba(201,168,76,0.35);
+}
+
+.dark {
+  /* Dark mode — warm leather tome */
+  --bg:          #1a1507;
+  --bg-card:     #231c0a;
+  --bg-elevated: #2d2410;
+  --border:      #3d2e10;
+  --border-strong: #c9a84c;
+
+  --fg:          #f5e6c8;
+  --fg-muted:    #c4a876;
+  --fg-subtle:   #8a7450;
+
+  --gold:        #e6b84a;
+  --gold-bright: #f0cc70;
+  --gold-dim:    #b08830;
+  --brown:       #c49060;
+  --brown-light: #e0b080;
+
+  --emerald:     #22c55e;
+  --amber:       #f59e0b;
+  --ruby:        #ef4444;
+  --sapphire:    #60a5fa;
+
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.6);
+  --shadow-gold: 0 0 24px rgba(230,184,74,0.4);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg:           var(--bg);
+  --color-bg-card:      var(--bg-card);
+  --color-bg-elevated:  var(--bg-elevated);
+  --color-border:       var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg:           var(--fg);
+  --color-fg-muted:     var(--fg-muted);
+  --color-fg-subtle:    var(--fg-subtle);
+  --color-gold:         var(--gold);
+  --color-gold-bright:  var(--gold-bright);
+  --color-gold-dim:     var(--gold-dim);
+  --color-brown:        var(--brown);
+  --color-emerald:      var(--emerald);
+  --color-amber:        var(--amber);
+  --color-ruby:         var(--ruby);
+  --color-sapphire:     var(--sapphire);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Base ──────────────────────────────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: 'Nunito', system-ui, sans-serif;
+  min-height: 100dvh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* ─── RPG Typography ────────────────────────────────────────────────────────── */
+
+.font-quest {
+  font-family: 'Cinzel', Georgia, serif;
+}
+
+.font-body {
+  font-family: 'Nunito', system-ui, sans-serif;
+}
+
+/* ─── Parchment Card ────────────────────────────────────────────────────────── */
+
+.card-parchment {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-parchment:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card-gold {
+  border-color: var(--gold);
+  box-shadow: var(--shadow-gold);
+}
+
+/* ─── Gold Shimmer Animation ────────────────────────────────────────────────── */
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--gold-dim) 0%,
+    var(--gold-bright) 50%,
+    var(--gold-dim) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── XP Bar ────────────────────────────────────────────────────────────────── */
+
+.xp-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-bright));
+  transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ─── Status Colors ─────────────────────────────────────────────────────────── */
+
+.status-done     { color: var(--emerald); }
+.status-pending  { color: var(--amber); }
+.status-overdue  { color: var(--ruby); }
+.status-reward   { color: var(--sapphire); }
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+
+/* ─── Selection ─────────────────────────────────────────────────────────────── */
+
+::selection { background: var(--gold); color: var(--bg); }

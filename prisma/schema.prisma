@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Household {
+  id             String   @id @default(cuid())
+  name           String
+  inviteCode     String   @unique @default(cuid())
+  sharedPoints   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  members        Profile[]
+  categories     Category[]
+  tasks          Task[]
+  rewards        Reward[]
+}
+
+model Profile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  householdId    String?
+  email          String
+  displayName    String
+  avatarUrl      String?
+  personalPoints Int      @default(0)
+  level          Int      @default(1)
+  role           Role     @default(MEMBER)
+  theme          Theme    @default(LIGHT)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  household      Household?          @relation(fields: [householdId], references: [id])
+  createdTasks   Task[]              @relation("CreatedTasks")
+  assignedTasks  Task[]              @relation("AssignedTasks")
+  completedTasks Task[]              @relation("CompletedTasks")
+  createdRewards Reward[]
+  rewardClaims   RewardClaim[]
+  notificationPreferences NotificationPreference[]
+  pushSubscriptions       PushSubscription[]
+}
+
+model Category {
+  id            String   @id @default(cuid())
+  householdId   String
+  name          String
+  icon          String
+  color         String
+  defaultPoints Int      @default(10)
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  household     Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  tasks         Task[]
+}
+
+model Task {
+  id              String     @id @default(cuid())
+  householdId     String
+  categoryId      String
+  createdById     String
+  assignedToId    String?
+  completedById   String?
+  title           String
+  description     String?
+  points          Int        @default(10)
+  pointsType      PointsType @default(PERSONAL)
+  type            TaskType   @default(ONE_OFF)
+  recurrenceRule  String?
+  dueAt           DateTime?
+  completedAt     DateTime?
+  status          TaskStatus @default(PENDING)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  household       Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  category        Category  @relation(fields: [categoryId], references: [id])
+  createdBy       Profile   @relation("CreatedTasks", fields: [createdById], references: [id])
+  assignedTo      Profile?  @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  completedBy     Profile?  @relation("CompletedTasks", fields: [completedById], references: [id])
+}
+
+model Reward {
+  id            String     @id @default(cuid())
+  householdId   String
+  createdById   String
+  title         String
+  description   String?
+  icon          String     @default("🏆")
+  type          RewardType @default(PLEDGE)
+  cost          Int
+  costType      PointsType @default(PERSONAL)
+  repeatable    Boolean    @default(true)
+  cooldownHours Int        @default(24)
+  timesClaimed  Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  household     Household   @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdBy     Profile     @relation(fields: [createdById], references: [id])
+  claims        RewardClaim[]
+}
+
+model RewardClaim {
+  id          String   @id @default(cuid())
+  rewardId    String
+  claimedById String
+  claimedAt   DateTime @default(now())
+
+  reward      Reward  @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  claimedBy   Profile @relation(fields: [claimedById], references: [id])
+}
+
+model NotificationPreference {
+  id                String        @id @default(cuid())
+  profileId         String
+  eventType         NotificationEvent
+  enabled           Boolean       @default(true)
+  dailyDigestTime   String        @default("08:00")
+  reminderHoursBefore Int         @default(1)
+
+  profile           Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, eventType])
+}
+
+model PushSubscription {
+  id          String   @id @default(cuid())
+  profileId   String
+  endpoint    String   @unique
+  keysJson    String
+  createdAt   DateTime @default(now())
+
+  profile     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum Theme {
+  LIGHT
+  DARK
+}
+
+enum TaskType {
+  ONE_OFF
+  RECURRING
+}
+
+enum TaskStatus {
+  PENDING
+  DONE
+  SKIPPED
+}
+
+enum PointsType {
+  PERSONAL
+  SHARED
+}
+
+enum RewardType {
+  VIRTUAL
+  PLEDGE
+}
+
+enum NotificationEvent {
+  TASK_PENDING
+  TASK_COMPLETED_BY_PARTNER
+  REWARD_CLAIMED
+  TASK_ASSIGNED
+  POINTS_MILESTONE
+  DAILY_SUMMARY
+}
