@@ -39,7 +39,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/effect ./node_module
 
 # Schema and config for migrate deploy
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.js ./prisma.config.js
 
 COPY --from=builder --chown=nextjs:nodejs /app/startup.sh ./startup.sh
 RUN chmod +x startup.sh
