@@ -39,10 +39,13 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/entrypoint.sh ./entrypoint.sh
 
-RUN chmod +x entrypoint.sh
+# Install prisma CLI with all deps for migrate deploy
+COPY --from=builder /app/node_modules/prisma/package.json /tmp/prisma-version.json
+RUN PRISMA_VERSION=$(node -e "console.log(require('/tmp/prisma-version.json').version)") && \
+    npm install -g prisma@$PRISMA_VERSION --ignore-scripts && \
+    chmod +x entrypoint.sh
 
 USER nextjs
 
