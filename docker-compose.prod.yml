@@ -1,4 +1,16 @@
 services:
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrate
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/dailyquest
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
   app:
     build:
       context: .
@@ -10,6 +22,8 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
     restart: unless-stopped
