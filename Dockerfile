@@ -44,7 +44,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/entrypoint.sh ./entrypoint.sh
 # Install prisma CLI with all deps for migrate deploy
 COPY --from=builder /app/node_modules/prisma/package.json /tmp/prisma-version.json
 RUN PRISMA_VERSION=$(node -e "console.log(require('/tmp/prisma-version.json').version)") && \
-    npm install -g prisma@$PRISMA_VERSION --ignore-scripts && \
+    npm install -g prisma@$PRISMA_VERSION && \
+    chown -R nextjs:nodejs /usr/local/lib/node_modules/prisma && \
     chmod +x entrypoint.sh
 
 USER nextjs
