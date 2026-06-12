@@ -36,6 +36,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modul
 # Prisma v7 migrate: CLI + its required deps
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/effect ./node_modules/effect
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/fast-check ./node_modules/fast-check
 
 # Schema and config for migrate deploy
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
