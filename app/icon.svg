@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Blade -->
+  <path d="M16 3 L19 16 L16 18 L13 16 Z" fill="#C9A84C" />
+  <!-- Crossguard -->
+  <rect x="10" y="16" width="12" height="2.5" rx="1.25" fill="#8B6914" />
+  <!-- Grip -->
+  <rect x="14.5" y="18.5" width="3" height="7" rx="1.5" fill="#6B4F12" />
+  <!-- Pommel -->
+  <circle cx="16" cy="27" r="2" fill="#8B6914" />
+  <!-- Blade shine -->
+  <path d="M16 4 L17.2 13" stroke="#F5D78E" stroke-width="0.8" stroke-linecap="round" opacity="0.7" />
+</svg>
