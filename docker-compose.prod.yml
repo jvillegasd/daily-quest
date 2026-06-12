@@ -13,16 +13,6 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
-    networks:
-      - coolify
-      - default
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.daily-quest.rule=Host(`daily-quest.jvillegasd.com`)"
-      - "traefik.http.routers.daily-quest.entrypoints=https"
-      - "traefik.http.routers.daily-quest.tls=true"
-      - "traefik.http.routers.daily-quest.tls.certresolver=letsencrypt"
-      - "traefik.http.services.daily-quest.loadbalancer.server.port=3000"
 
   postgres:
     image: postgres:16-alpine
@@ -38,13 +28,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    networks:
-      - default
-
-networks:
-  coolify:
-    external: true
-  default:
 
 volumes:
   postgres_data:
