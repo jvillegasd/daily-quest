@@ -23,6 +23,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build
 
+# Migration image — full node_modules so prisma migrate deploy works
+FROM base AS migrator
+RUN apk add --no-cache openssl
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+CMD ["node_modules/.bin/prisma", "migrate", "deploy"]
+
 # Production image
 FROM base AS runner
 WORKDIR /app
@@ -39,14 +48,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/entrypoint.sh ./entrypoint.sh
-
-# Install prisma CLI with all deps for migrate deploy
-COPY --from=builder /app/node_modules/prisma/package.json /tmp/prisma-version.json
-RUN PRISMA_VERSION=$(node -e "console.log(require('/tmp/prisma-version.json').version)") && \
-    npm install -g prisma@$PRISMA_VERSION && \
-    chown -R nextjs:nodejs /usr/local/lib/node_modules/prisma && \
-    chmod +x entrypoint.sh
 
 USER nextjs
 
@@ -55,4 +56,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "entrypoint.sh"]
+CMD ["node", "server.js"]
