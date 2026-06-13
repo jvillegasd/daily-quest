@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Scroll, Trophy, LayoutDashboard, Settings } from 'lucide-react'
+import { Scroll, Trophy, LayoutDashboard, Settings, Home } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useTranslation } from '@/lib/i18n/use-translation'
 
@@ -14,6 +14,7 @@ export function MobileNav() {
     { href: '/dashboard', icon: LayoutDashboard, label: t('nav.kingdom') },
     { href: '/quests', icon: Scroll, label: t('nav.questLog') },
     { href: '/rewards', icon: Trophy, label: t('nav.treasure') },
+    { href: '/household', icon: Home, label: t('nav.household') },
     { href: '/settings', icon: Settings, label: t('nav.settings') },
   ]
 

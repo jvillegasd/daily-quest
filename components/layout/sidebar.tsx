@@ -29,7 +29,7 @@ export function Sidebar({ profile }: SidebarProps) {
     <aside className="flex h-full flex-col border-r border-border bg-bg-card w-60 shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-2 px-5 py-5 border-b border-border">
-        <span className="text-2xl">⚔️</span>
+        <img src="/sword.svg" alt="Daily Quest" className="h-8 w-8" />
         <span className="font-quest text-lg font-bold text-gold">Daily Quest</span>
       </div>
 

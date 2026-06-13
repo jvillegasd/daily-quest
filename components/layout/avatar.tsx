@@ -1,6 +1,7 @@
 'use client'
 
-import { getLevelName } from '@/lib/types'
+import { getLevelKey } from '@/lib/types'
+import { useTranslation } from '@/lib/i18n/use-translation'
 import { cn } from '@/lib/utils/cn'
 
 interface AvatarProps {
@@ -78,12 +79,14 @@ export function Avatar({ displayName, avatarUrl, level, size = 'md', showLevel =
 }
 
 export function LevelBadge({ level }: { level: number }) {
+  const { t } = useTranslation()
   return (
     <span
       className="inline-flex items-center gap-1 text-xs font-quest font-semibold"
       style={{ color: getLevelColor(level) }}
     >
-      ⚔️ {getLevelName(level)}
+      <img src="/sword.svg" alt="" className="h-3 w-3" />
+      {t(getLevelKey(level))}
     </span>
   )
 }

@@ -162,6 +162,22 @@
     "languageEnglish": "English",
     "languageSpanish": "Español"
   },
+  "levels": {
+    "novice": "Novato",
+    "apprentice": "Aprendiz",
+    "squire": "Escudero",
+    "scout": "Explorador",
+    "soldier": "Soldado",
+    "knight": "Caballero",
+    "ranger": "Guardabosques",
+    "champion": "Campeón",
+    "paladin": "Paladín",
+    "warlord": "Señor de la Guerra",
+    "guardian": "Guardián",
+    "archmage": "Archimago",
+    "overlord": "Señor Supremo",
+    "legendaryHero": "Héroe Legendario"
+  },
   "notifications": {
     "TASK_PENDING": "⏰ Recordatorios de tareas",
     "TASK_COMPLETED_BY_PARTNER": "⚔️ Compañero completa una misión",

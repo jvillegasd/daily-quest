@@ -150,6 +150,31 @@ export function getLevelName(level: number): string {
   return 'Novice'
 }
 
+const LEVEL_KEYS: Record<number, string> = {
+  1: 'levels.novice',
+  2: 'levels.apprentice',
+  3: 'levels.squire',
+  4: 'levels.scout',
+  5: 'levels.soldier',
+  10: 'levels.knight',
+  15: 'levels.ranger',
+  20: 'levels.champion',
+  25: 'levels.paladin',
+  30: 'levels.warlord',
+  35: 'levels.guardian',
+  40: 'levels.archmage',
+  45: 'levels.overlord',
+  50: 'levels.legendaryHero',
+}
+
+export function getLevelKey(level: number): string {
+  const keys = Object.keys(LEVEL_KEYS).map(Number).sort((a, b) => b - a)
+  for (const key of keys) {
+    if (level >= key) return LEVEL_KEYS[key]
+  }
+  return 'levels.novice'
+}
+
 export function getPointsForLevel(level: number): number {
   return level * level * 100
 }

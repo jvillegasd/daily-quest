@@ -162,6 +162,22 @@
     "languageEnglish": "English",
     "languageSpanish": "Español"
   },
+  "levels": {
+    "novice": "Novice",
+    "apprentice": "Apprentice",
+    "squire": "Squire",
+    "scout": "Scout",
+    "soldier": "Soldier",
+    "knight": "Knight",
+    "ranger": "Ranger",
+    "champion": "Champion",
+    "paladin": "Paladin",
+    "warlord": "Warlord",
+    "guardian": "Guardian",
+    "archmage": "Archmage",
+    "overlord": "Overlord",
+    "legendaryHero": "Legendary Hero"
+  },
   "notifications": {
     "TASK_PENDING": "⏰ Task reminders",
     "TASK_COMPLETED_BY_PARTNER": "⚔️ Partner completes a quest",
