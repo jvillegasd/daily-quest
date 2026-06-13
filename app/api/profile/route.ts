@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getProfile } from '@/lib/auth/get-profile'
 import { db } from '@/lib/db/implementation'
 import { prisma } from '@/lib/db/prisma'
+import { ROLE } from '@/lib/types'
 import { SUPPORTED_LOCALES } from '@/lib/i18n/locale-context'
 import type { Locale } from '@/lib/i18n/locale-context'
 
@@ -37,12 +38,12 @@ export async function DELETE() {
       if (members.length === 1) {
         // Sole member — delete the whole household (cascades tasks, rewards, categories)
         await tx.household.delete({ where: { id: profile.householdId } })
-      } else if (profile.role === 'ADMIN') {
-        const otherAdmins = members.filter((m) => m.id !== profile.id && m.role === 'ADMIN')
+      } else if (profile.role === ROLE.ADMIN) {
+        const otherAdmins = members.filter((m) => m.id !== profile.id && m.role === ROLE.ADMIN)
         if (otherAdmins.length === 0) {
           // Only admin with other members — promote the first other member
           const nextAdmin = members.find((m) => m.id !== profile.id)!
-          await tx.profile.update({ where: { id: nextAdmin.id }, data: { role: 'ADMIN' } })
+          await tx.profile.update({ where: { id: nextAdmin.id }, data: { role: ROLE.ADMIN } })
         }
       }
     }
