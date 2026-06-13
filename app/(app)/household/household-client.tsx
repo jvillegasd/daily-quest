@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, LevelBadge } from '@/components/layout/avatar'
 import { useTranslation } from '@/lib/i18n/use-translation'
+import { EmojiPicker } from '@/components/ui/emoji-picker'
 import type { Profile, Household, Category } from '@/lib/types'
 
 interface Props {
@@ -137,7 +138,7 @@ export function HouseholdClient({ profile, household, members, categories: initi
             className="mb-4 p-3 rounded-lg bg-bg-elevated border border-border space-y-3"
           >
             <div className="grid grid-cols-4 gap-2">
-              <Input label={t('household.categoryIconLabel')} value={newCat.icon} onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })} className="text-center" />
+              <EmojiPicker label={t('household.categoryIconLabel')} value={newCat.icon} onChange={(emoji) => setNewCat({ ...newCat, icon: emoji })} />
               <div className="col-span-3">
                 <Input label={t('household.categoryNameLabel')} value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value })} placeholder={t('household.categoryNamePlaceholder')} required />
               </div>
