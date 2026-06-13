@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getProfile } from '@/lib/auth/get-profile'
 import { tasksService } from '@/lib/services/tasks.service'
 import { db } from '@/lib/db/implementation'
-import { TASK_ACTION } from '@/lib/types'
+import { TASK_ACTION, POINTS_TYPE } from '@/lib/types'
 
 async function authorize(taskId: string, householdId: string) {
   const task = await db.tasks.findById(taskId)
@@ -19,7 +19,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (error) return error
   const body = await request.json()
   if (body.action === TASK_ACTION.COMPLETE) {
-    if (task!.pointsType === 'PERSONAL' && task!.assignedToId && task!.assignedToId !== profile.id) {
+    if (task!.pointsType === POINTS_TYPE.PERSONAL && task!.assignedToId && task!.assignedToId !== profile.id) {
       return NextResponse.json({ error: 'Only the assigned member can complete this quest' }, { status: 403 })
     }
     return NextResponse.json({ task: await tasksService.complete(id, profile.id) })
