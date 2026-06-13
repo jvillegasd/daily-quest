@@ -5,9 +5,10 @@ import { Sword, Shield, Trophy, Clock } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, LevelBadge } from '@/components/layout/avatar'
-import { getPointsForLevel, getLevelFromPoints } from '@/lib/types'
+import { getPointsForLevel, getLevelFromPoints, TASK_STATUS } from '@/lib/types'
 import { useTranslation } from '@/lib/i18n/use-translation'
 import type { Profile, Task, Reward, Household } from '@/lib/types'
+import { ANIMATION } from '@/lib/constants'
 
 interface Props {
   profile: Profile
@@ -17,16 +18,16 @@ interface Props {
   household: Household
 }
 
-const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } }
+const container: Variants = { hidden: {}, show: { transition: { staggerChildren: ANIMATION.CONTAINER_STAGGER } } }
 const item: Variants = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, damping: 20, stiffness: 300 } },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, damping: ANIMATION.SPRING_DAMPING, stiffness: ANIMATION.SPRING_STIFFNESS } },
 }
 
 export function DashboardClient({ profile, tasks, rewards, members, household }: Props) {
   const { t } = useTranslation()
-  const pending = tasks.filter((task) => task.status === 'PENDING')
-  const done = tasks.filter((task) => task.status === 'DONE')
+  const pending = tasks.filter((task) => task.status === TASK_STATUS.PENDING)
+  const done = tasks.filter((task) => task.status === TASK_STATUS.DONE)
   const myTasks = pending.filter((task) => task.assignedToId === profile.id || !task.assignedToId)
 
   const nextLevelPoints = getPointsForLevel(profile.level + 1)
@@ -93,7 +94,7 @@ export function DashboardClient({ profile, tasks, rewards, members, household }:
                     className="xp-bar-fill"
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(xpProgress, 100)}%` }}
-                    transition={{ duration: 1.2, ease: 'easeOut' }}
+                    transition={{ duration: ANIMATION.XP_DURATION, ease: 'easeOut' }}
                   />
                 </div>
               </div>

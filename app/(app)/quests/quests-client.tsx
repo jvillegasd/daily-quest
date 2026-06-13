@@ -12,9 +12,13 @@ import { Select } from '@/components/ui/select'
 import { Avatar } from '@/components/layout/avatar'
 import { useTranslation } from '@/lib/i18n/use-translation'
 import { hexToRgba } from '@/lib/utils/color'
+import { TASK_STATUS, TASK_TYPE, POINTS_TYPE, TASK_FILTER, TASK_ACTION, FORM_DEFAULTS, type TaskFilter } from '@/lib/types'
 import type { Profile, Task, Category } from '@/lib/types'
+import { API } from '@/lib/constants'
+import { ANIMATION, CONFETTI } from '@/lib/constants'
 import { formatDistanceToNow } from 'date-fns'
 import { es as esLocale } from 'date-fns/locale'
+import { SUPPORTED_LOCALES } from '@/lib/i18n/locale-context'
 
 interface Props {
   profile: Profile
@@ -26,17 +30,17 @@ interface Props {
 function Confetti() {
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {Array.from({ length: 24 }).map((_, i) => (
+      {Array.from({ length: CONFETTI.COUNT }).map((_, i) => (
         <motion.div
           key={i}
           className="absolute w-2 h-2 rounded-full"
           style={{
             left: `${Math.random() * 100}%`,
             top: '-10%',
-            background: ['#c9a84c', '#e6b84a', '#16a34a', '#2563eb', '#dc2626'][i % 5],
+            background: CONFETTI.COLORS[i % CONFETTI.COLORS.length],
           }}
-          animate={{ y: '110vh', rotate: Math.random() * 720, x: (Math.random() - 0.5) * 200 }}
-          transition={{ duration: 1.5 + Math.random(), ease: 'easeIn', delay: Math.random() * 0.3 }}
+          animate={{ y: '110vh', rotate: Math.random() * CONFETTI.MAX_ROTATION, x: (Math.random() - 0.5) * 200 }}
+          transition={{ duration: CONFETTI.DURATION + Math.random(), ease: 'easeIn', delay: Math.random() * CONFETTI.MAX_DELAY }}
         />
       ))}
     </div>
@@ -46,28 +50,32 @@ function Confetti() {
 export function QuestsClient({ profile, initialTasks, categories, members }: Props) {
   const { locale, t } = useTranslation()
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
-  const [filter, setFilter] = useState<'all' | 'mine' | 'open' | 'done'>('all')
+  const [filter, setFilter] = useState<TaskFilter>(TASK_FILTER.ALL)
   const [categoryFilter, setCategoryFilter] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [celebrating, setCelebrating] = useState(false)
   const [loading, setLoading] = useState<string | null>(null)
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    title: string; description: string; categoryId: string
+    points: number; pointsType: string; type: string
+    assignedToId: string; dueAt: string; recurrenceRule: string
+  }>({
     title: '', description: '', categoryId: categories[0]?.id ?? '',
-    points: 10, pointsType: 'PERSONAL', type: 'ONE_OFF',
+    points: FORM_DEFAULTS.TASK.points, pointsType: FORM_DEFAULTS.TASK.pointsType, type: FORM_DEFAULTS.TASK.type,
     assignedToId: '', dueAt: '', recurrenceRule: '',
   })
 
   const filtered = tasks.filter((task) => {
-    if (filter === 'mine') return task.assignedToId === profile.id && task.status === 'PENDING'
-    if (filter === 'open') return !task.assignedToId && task.status === 'PENDING'
-    if (filter === 'done') return task.status === 'DONE'
+    if (filter === TASK_FILTER.MINE) return task.assignedToId === profile.id && task.status === TASK_STATUS.PENDING
+    if (filter === TASK_FILTER.OPEN) return !task.assignedToId && task.status === TASK_STATUS.PENDING
+    if (filter === TASK_FILTER.DONE) return task.status === TASK_STATUS.DONE
     return true
   }).filter((task) => !categoryFilter || task.categoryId === categoryFilter)
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    const res = await fetch('/api/tasks', {
+    const res = await fetch(API.TASKS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -75,48 +83,48 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
         points: Number(form.points),
         assignedToId: form.assignedToId || null,
         dueAt: form.dueAt || null,
-        recurrenceRule: form.type === 'RECURRING' ? form.recurrenceRule : null,
+        recurrenceRule: form.type === TASK_TYPE.RECURRING ? form.recurrenceRule : null,
       }),
     })
     const { task } = await res.json()
     setTasks((prev) => [task, ...prev])
     setShowCreate(false)
-    setForm({ title: '', description: '', categoryId: categories[0]?.id ?? '', points: 10, pointsType: 'PERSONAL', type: 'ONE_OFF', assignedToId: '', dueAt: '', recurrenceRule: '' })
+    setForm({ title: '', description: '', categoryId: categories[0]?.id ?? '', points: FORM_DEFAULTS.TASK.points, pointsType: FORM_DEFAULTS.TASK.pointsType, type: FORM_DEFAULTS.TASK.type, assignedToId: '', dueAt: '', recurrenceRule: '' })
   }
 
   async function handleComplete(taskId: string) {
     setLoading(taskId)
-    const res = await fetch(`/api/tasks/${taskId}`, {
+    const res = await fetch(API.TASK(taskId), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'complete' }),
+      body: JSON.stringify({ action: TASK_ACTION.COMPLETE }),
     })
     const { task } = await res.json()
     setTasks((prev) => prev.map((item) => item.id === taskId ? task : item))
     setCelebrating(true)
-    setTimeout(() => setCelebrating(false), 2000)
+    setTimeout(() => setCelebrating(false), ANIMATION.CELEBRATION_MS)
     setLoading(null)
   }
 
   async function handleSkip(taskId: string) {
     setLoading(taskId)
-    const res = await fetch(`/api/tasks/${taskId}`, {
+    const res = await fetch(API.TASK(taskId), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'skip' }),
+      body: JSON.stringify({ action: TASK_ACTION.SKIP }),
     })
     const { task } = await res.json()
     setTasks((prev) => prev.map((t) => t.id === taskId ? task : t))
     setLoading(null)
   }
 
-  const dateLocale = locale === 'es' ? esLocale : undefined
+  const dateLocale = locale === SUPPORTED_LOCALES[1] ? esLocale : undefined
 
-  const filterLabels: Record<typeof filter, string> = {
-    all: t('quests.filterAll'),
-    mine: t('quests.filterMine'),
-    open: t('quests.filterOpen'),
-    done: t('quests.filterDone'),
+  const filterLabels: Record<TaskFilter, string> = {
+    [TASK_FILTER.ALL]: t('quests.filterAll'),
+    [TASK_FILTER.MINE]: t('quests.filterMine'),
+    [TASK_FILTER.OPEN]: t('quests.filterOpen'),
+    [TASK_FILTER.DONE]: t('quests.filterDone'),
   }
 
   return (
@@ -126,7 +134,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-quest text-2xl font-bold text-fg">{t('quests.title')}</h1>
-          <p className="text-fg-muted text-sm">{t('quests.questsAwait', { count: tasks.filter((task) => task.status === 'PENDING').length })}</p>
+          <p className="text-fg-muted text-sm">{t('quests.questsAwait', { count: tasks.filter((task) => task.status === TASK_STATUS.PENDING).length })}</p>
         </div>
         <Button onClick={() => setShowCreate(true)} size="sm">
           <Plus size={14} /> {t('quests.newQuest')}
@@ -135,7 +143,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap mb-4">
-        {(['all', 'mine', 'open', 'done'] as const).map((f) => (
+        {(Object.values(TASK_FILTER) as TaskFilter[]).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -180,10 +188,10 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, x: 40, scale: 0.95 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+              transition={{ type: 'spring', damping: ANIMATION.SPRING_DAMPING, stiffness: ANIMATION.SPRING_STIFFNESS }}
               className="mb-3"
             >
-              <Card className={task.status === 'DONE' ? 'opacity-60' : ''}>
+              <Card className={task.status === TASK_STATUS.DONE ? 'opacity-60' : ''}>
                 <div className="flex items-start gap-3">
                   <div
                     className="h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0"
@@ -194,17 +202,17 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`font-semibold text-fg ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
+                      <p className={`font-semibold text-fg ${task.status === TASK_STATUS.DONE ? 'line-through text-fg-muted' : ''}`}>
                         {task.title}
                       </p>
-                      {task.type === 'RECURRING' && <Badge variant="sapphire">{t('quests.recurring')}</Badge>}
+                      {task.type === TASK_TYPE.RECURRING && <Badge variant="sapphire">{t('quests.recurring')}</Badge>}
                       {isOverdue && <Badge variant="ruby">{t('quests.overdue')}</Badge>}
                     </div>
 
                     {task.description && <p className="text-xs text-fg-muted mt-0.5">{task.description}</p>}
 
                     <div className="flex items-center gap-3 mt-2 flex-wrap">
-                      <Badge variant="gold">+{task.points} {task.pointsType === 'PERSONAL' ? t('common.personal') : t('common.shared')}</Badge>
+                      <Badge variant="gold">+{task.points} {task.pointsType === POINTS_TYPE.PERSONAL ? t('common.personal') : t('common.shared')}</Badge>
                       {cat && <Badge variant="muted">{cat.name}</Badge>}
                       {task.dueAt && (
                         <span className={`text-xs ${isOverdue ? 'text-ruby' : 'text-fg-subtle'}`}>
@@ -222,7 +230,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
                     </div>
                   </div>
 
-                  {task.status === 'PENDING' && (
+                  {task.status === TASK_STATUS.PENDING && (
                     <div className="flex gap-1.5 shrink-0">
                       <Button
                         variant="emerald" size="sm"
@@ -243,7 +251,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
                     </div>
                   )}
 
-                  {task.status === 'DONE' && (
+                  {task.status === TASK_STATUS.DONE && (
                     <Badge variant="emerald">{t('quests.done')}</Badge>
                   )}
                 </div>
@@ -264,20 +272,20 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
               {categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
             </Select>
             <Select label={t('quests.typeLabel')} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-              <option value="ONE_OFF">{t('quests.typeOneOff')}</option>
-              <option value="RECURRING">{t('quests.typeRecurring')}</option>
+              <option value={TASK_TYPE.ONE_OFF}>{t('quests.typeOneOff')}</option>
+              <option value={TASK_TYPE.RECURRING}>{t('quests.typeRecurring')}</option>
             </Select>
           </div>
 
-          {form.type === 'RECURRING' && (
+          {form.type === TASK_TYPE.RECURRING && (
             <Input label={t('quests.recurrenceLabel')} value={form.recurrenceRule} onChange={(e) => setForm({ ...form, recurrenceRule: e.target.value })} placeholder={t('quests.recurrencePlaceholder')} />
           )}
 
           <div className="grid grid-cols-2 gap-3">
             <Input label={t('quests.pointsLabel')} type="number" min={1} value={form.points} onChange={(e) => setForm({ ...form, points: Number(e.target.value) })} />
             <Select label={t('quests.pointsTypeLabel')} value={form.pointsType} onChange={(e) => setForm({ ...form, pointsType: e.target.value })}>
-              <option value="PERSONAL">{t('quests.pointsTypePersonal')}</option>
-              <option value="SHARED">{t('quests.pointsTypeShared')}</option>
+              <option value={POINTS_TYPE.PERSONAL}>{t('quests.pointsTypePersonal')}</option>
+              <option value={POINTS_TYPE.SHARED}>{t('quests.pointsTypeShared')}</option>
             </Select>
           </div>
 

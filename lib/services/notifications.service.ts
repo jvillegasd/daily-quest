@@ -1,7 +1,10 @@
 import { db } from '@/lib/db/implementation'
 import type { Task, Reward } from '@/lib/types'
+import type { Locale } from '@/lib/i18n/locale-context'
+import { serverT } from '@/lib/i18n/server'
+import { NOTIFICATION_KEY, NOTIFICATION_ICON, DEFAULT_REMINDER_HOURS } from '@/lib/constants'
 
-async function sendPush(subscriptions: { endpoint: string; keysJson: string }[], payload: object) {
+async function sendPush(subscriptions: { endpoint: string; keysJson: string; locale: string }[], buildPayload: (locale: Locale) => object) {
   if (typeof window !== 'undefined') return // client side guard
 
   try {
@@ -15,7 +18,7 @@ async function sendPush(subscriptions: { endpoint: string; keysJson: string }[],
       subscriptions.map((sub) =>
         webpush.sendNotification(
           { endpoint: sub.endpoint, keys: JSON.parse(sub.keysJson) },
-          JSON.stringify(payload)
+          JSON.stringify(buildPayload(sub.locale as Locale))
         )
       )
     )
@@ -40,31 +43,31 @@ export const notificationsService = {
     if (!task.householdId) return
     const subs = await db.notifications.getHouseholdPushSubscriptions(task.householdId)
     const others = subs.filter((s) => s.profileId !== completedById)
-    await sendPush(others, {
-      title: '⚔️ Quest Complete!',
+    await sendPush(others, (locale) => ({
+      title: serverT(locale, NOTIFICATION_KEY.QUEST_COMPLETE),
       body: `A party member completed: "${task.title}" (+${task.points} pts)`,
-      icon: '/icons/icon-192.png',
-    })
+      icon: NOTIFICATION_ICON,
+    }))
   },
 
   async sendTaskAssigned(task: Task) {
     if (!task.assignedToId) return
     const subs = await db.notifications.getPushSubscriptions(task.assignedToId)
-    await sendPush(subs, {
-      title: '📜 New Quest Assigned',
+    await sendPush(subs, (locale) => ({
+      title: serverT(locale, NOTIFICATION_KEY.QUEST_ASSIGNED),
       body: `"${task.title}" has been assigned to you`,
-      icon: '/icons/icon-192.png',
-    })
+      icon: NOTIFICATION_ICON,
+    }))
   },
 
   async sendRewardClaimed(reward: Reward, claimedById: string, householdId: string) {
     const subs = await db.notifications.getHouseholdPushSubscriptions(householdId)
     const others = subs.filter((s) => s.profileId !== claimedById)
-    await sendPush(others, {
-      title: '🏆 Treasure Claimed!',
+    await sendPush(others, (locale) => ({
+      title: serverT(locale, NOTIFICATION_KEY.TREASURE_CLAIMED),
       body: `A party member claimed: "${reward.title}"`,
-      icon: '/icons/icon-192.png',
-    })
+      icon: NOTIFICATION_ICON,
+    }))
   },
 
   async sendDailyDigest(householdId: string) {
@@ -79,12 +82,13 @@ export const notificationsService = {
       )
       if (myTasks.length === 0) continue
 
+      const locale = profile.locale as Locale
       const subs = await db.notifications.getPushSubscriptions(profile.id)
-      await sendPush(subs, {
-        title: '🌅 Daily Quest Report',
+      await sendPush(subs, () => ({
+        title: serverT(locale, NOTIFICATION_KEY.DAILY_DIGEST),
         body: `${myTasks.length} quest${myTasks.length > 1 ? 's' : ''} await your attention`,
-        icon: '/icons/icon-192.png',
-      })
+        icon: NOTIFICATION_ICON,
+      }))
 
       await sendEmail(
         profile.email,
@@ -94,16 +98,16 @@ export const notificationsService = {
     }
   },
 
-  async sendPendingReminder(householdId: string, withinHours = 1) {
+  async sendPendingReminder(householdId: string, withinHours = DEFAULT_REMINDER_HOURS) {
     const dueSoon = await db.tasks.findPendingDue(householdId, withinHours)
     for (const task of dueSoon) {
       if (!task.assignedToId) continue
       const subs = await db.notifications.getPushSubscriptions(task.assignedToId)
-      await sendPush(subs, {
-        title: '⏰ Quest Due Soon!',
+      await sendPush(subs, (locale) => ({
+        title: serverT(locale, NOTIFICATION_KEY.QUEST_DUE_SOON),
         body: `"${task.title}" is due in less than ${withinHours}h`,
-        icon: '/icons/icon-192.png',
-      })
+        icon: NOTIFICATION_ICON,
+      }))
     }
   },
 }

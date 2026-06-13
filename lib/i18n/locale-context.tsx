@@ -4,6 +4,8 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import type enJson from '@/locales/en.json'
 
 export type Locale = 'en' | 'es'
+export const SUPPORTED_LOCALES = ['en', 'es'] as const satisfies readonly Locale[]
+export const DEFAULT_LOCALE: Locale = 'en'
 export type Translations = typeof enJson
 
 const STORAGE_KEY = 'dq_locale'
@@ -46,7 +48,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
-    const safe: Locale = stored === 'es' ? 'es' : 'en'
+    const safe: Locale = (SUPPORTED_LOCALES as readonly string[]).includes(stored ?? '') ? (stored as Locale) : DEFAULT_LOCALE
     setLocaleState(safe)
     document.documentElement.lang = safe
     loadDictionary(safe).then(setDict)

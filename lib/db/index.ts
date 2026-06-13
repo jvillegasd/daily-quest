@@ -31,7 +31,7 @@ export interface ProfileRepository {
   joinHousehold(profileId: string, householdId: string): Promise<Profile>
   addPersonalPoints(profileId: string, points: number): Promise<Profile>
   deductPersonalPoints(profileId: string, points: number): Promise<Profile>
-  update(profileId: string, data: Partial<Pick<Profile, 'displayName' | 'avatarUrl'>>): Promise<Profile>
+  update(profileId: string, data: Partial<Pick<Profile, 'displayName' | 'avatarUrl' | 'locale'>>): Promise<Profile>
 }
 
 export interface CategoryRepository {
@@ -68,8 +68,8 @@ export interface NotificationRepository {
   upsert(data: Omit<NotificationPreference, 'id'>): Promise<NotificationPreference>
   savePushSubscription(profileId: string, endpoint: string, keys: object): Promise<void>
   deletePushSubscription(endpoint: string): Promise<void>
-  getPushSubscriptions(profileId: string): Promise<{ endpoint: string; keysJson: string }[]>
-  getHouseholdPushSubscriptions(householdId: string): Promise<{ endpoint: string; keysJson: string; profileId: string }[]>
+  getPushSubscriptions(profileId: string): Promise<{ endpoint: string; keysJson: string; locale: string }[]>
+  getHouseholdPushSubscriptions(householdId: string): Promise<{ endpoint: string; keysJson: string; profileId: string; locale: string }[]>
 }
 
 export interface Database {

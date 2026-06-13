@@ -11,7 +11,10 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { useTranslation } from '@/lib/i18n/use-translation'
 import { EmojiPicker } from '@/components/ui/emoji-picker'
+import { REWARD_TYPE, POINTS_TYPE, FORM_DEFAULTS } from '@/lib/types'
 import type { Profile, Reward, Household } from '@/lib/types'
+import { API } from '@/lib/constants'
+import { ANIMATION } from '@/lib/constants'
 
 interface Props {
   profile: Profile
@@ -32,13 +35,13 @@ function RewardCard({ reward, canAfford, onClaim, loading, t }: {
       initial={{ opacity: 0, scale: 0.92 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.88 }}
-      transition={{ type: 'spring', damping: 20, stiffness: 280 }}
+      transition={{ type: 'spring', damping: ANIMATION.SPRING_DAMPING, stiffness: ANIMATION.SPRING_STIFFNESS }}
     >
       <Card hover gold={canAfford} className="flex flex-col gap-3 p-5">
         <div className="flex items-start justify-between">
           <div className="text-3xl">{reward.icon}</div>
           <div className="flex gap-1.5 flex-wrap justify-end">
-            <Badge variant={reward.type === 'VIRTUAL' ? 'sapphire' : 'amber'}>
+            <Badge variant={reward.type === REWARD_TYPE.VIRTUAL ? 'sapphire' : 'amber'}>
               {reward.type === 'VIRTUAL' ? t('rewards.virtual') : t('rewards.pledge')}
             </Badge>
             {reward.repeatable && <Badge variant="muted">{t('rewards.repeatable')}</Badge>}
@@ -78,20 +81,28 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
   const [showCreate, setShowCreate] = useState(false)
   const [loading, setLoading] = useState<string | null>(null)
   const [claimMsg, setClaimMsg] = useState('')
-  const [form, setForm] = useState({
-    title: '', description: '', icon: '🏆', type: 'PLEDGE',
-    cost: 100, costType: 'PERSONAL', repeatable: true, cooldownHours: 24,
+  const [form, setForm] = useState<{
+    title: string; description: string; icon: string
+    type: string; cost: number; costType: string; repeatable: boolean; cooldownHours: number
+  }>({
+    title: '', description: '',
+    icon: FORM_DEFAULTS.REWARD.icon,
+    type: FORM_DEFAULTS.REWARD.type,
+    cost: FORM_DEFAULTS.REWARD.cost,
+    costType: FORM_DEFAULTS.REWARD.costType,
+    repeatable: FORM_DEFAULTS.REWARD.repeatable,
+    cooldownHours: FORM_DEFAULTS.REWARD.cooldownHours,
   })
 
   function canAfford(reward: Reward) {
-    if (reward.costType === 'PERSONAL') return profile.personalPoints >= reward.cost
+    if (reward.costType === POINTS_TYPE.PERSONAL) return profile.personalPoints >= reward.cost
     return household.sharedPoints >= reward.cost
   }
 
   async function handleClaim(rewardId: string) {
     setLoading(rewardId)
     setClaimMsg('')
-    const res = await fetch(`/api/rewards/${rewardId}/claim`, { method: 'POST' })
+    const res = await fetch(API.REWARD_CLAIM(rewardId), { method: 'POST' })
     const data = await res.json()
     if (!res.ok) { setClaimMsg(data.error); setLoading(null); return }
     setClaimMsg(t('rewards.claimedSuccess'))
@@ -100,7 +111,7 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    const res = await fetch('/api/rewards', {
+    const res = await fetch(API.REWARDS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, cost: Number(form.cost), cooldownHours: Number(form.cooldownHours) }),
@@ -169,12 +180,12 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
           <Input label={t('rewards.descriptionLabel')} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Details..." />
           <div className="grid grid-cols-2 gap-3">
             <Select label={t('rewards.typeLabel')} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-              <option value="PLEDGE">{t('rewards.typePledge')}</option>
-              <option value="VIRTUAL">{t('rewards.typeVirtual')}</option>
+              <option value={REWARD_TYPE.PLEDGE}>{t('rewards.typePledge')}</option>
+              <option value={REWARD_TYPE.VIRTUAL}>{t('rewards.typeVirtual')}</option>
             </Select>
             <Select label={t('rewards.costFromLabel')} value={form.costType} onChange={(e) => setForm({ ...form, costType: e.target.value })}>
-              <option value="PERSONAL">{t('rewards.costPersonal')}</option>
-              <option value="SHARED">{t('rewards.costShared')}</option>
+              <option value={POINTS_TYPE.PERSONAL}>{t('rewards.costPersonal')}</option>
+              <option value={POINTS_TYPE.SHARED}>{t('rewards.costShared')}</option>
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">

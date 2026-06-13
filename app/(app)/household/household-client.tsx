@@ -11,7 +11,9 @@ import { Avatar, LevelBadge } from '@/components/layout/avatar'
 import { useTranslation } from '@/lib/i18n/use-translation'
 import { EmojiPicker } from '@/components/ui/emoji-picker'
 import { hexToRgba } from '@/lib/utils/color'
+import { ROLE, FORM_DEFAULTS } from '@/lib/types'
 import type { Profile, Household, Category } from '@/lib/types'
+import { API } from '@/lib/constants'
 
 interface Props {
   profile: Profile
@@ -26,7 +28,7 @@ export function HouseholdClient({ profile, household, members, categories: initi
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
   const [inviteMsg, setInviteMsg] = useState('')
-  const [newCat, setNewCat] = useState({ name: '', icon: '📌', color: '#c9a84c', defaultPoints: 10 })
+  const [newCat, setNewCat] = useState({ name: '', icon: FORM_DEFAULTS.CATEGORY.icon, color: FORM_DEFAULTS.CATEGORY.color, defaultPoints: FORM_DEFAULTS.CATEGORY.defaultPoints })
   const [addingCat, setAddingCat] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: '', icon: '', color: '', defaultPoints: 10 })
@@ -35,7 +37,7 @@ export function HouseholdClient({ profile, household, members, categories: initi
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
     setInviting(true)
-    const res = await fetch('/api/invite', {
+    const res = await fetch(API.INVITE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: inviteEmail }),
@@ -47,14 +49,14 @@ export function HouseholdClient({ profile, household, members, categories: initi
 
   async function handleAddCategory(e: React.FormEvent) {
     e.preventDefault()
-    const res = await fetch('/api/categories', {
+    const res = await fetch(API.CATEGORIES, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...newCat, defaultPoints: Number(newCat.defaultPoints) }),
     })
     const { category } = await res.json()
     setCategories((prev) => [...prev, category])
-    setNewCat({ name: '', icon: '📌', color: '#c9a84c', defaultPoints: 10 })
+    setNewCat({ name: '', icon: FORM_DEFAULTS.CATEGORY.icon, color: FORM_DEFAULTS.CATEGORY.color, defaultPoints: FORM_DEFAULTS.CATEGORY.defaultPoints })
     setAddingCat(false)
   }
 
@@ -65,7 +67,7 @@ export function HouseholdClient({ profile, household, members, categories: initi
 
   async function handleSaveEdit(e: React.FormEvent, id: string) {
     e.preventDefault()
-    const res = await fetch(`/api/categories/${id}`, {
+    const res = await fetch(API.CATEGORY(id), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...editForm, defaultPoints: Number(editForm.defaultPoints) }),
@@ -76,7 +78,7 @@ export function HouseholdClient({ profile, household, members, categories: initi
   }
 
   async function handleDeleteCategory(id: string) {
-    await fetch(`/api/categories/${id}`, { method: 'DELETE' })
+    await fetch(API.CATEGORY(id), { method: 'DELETE' })
     setCategories((prev) => prev.filter((c) => c.id !== id))
     setConfirmDeleteId(null)
   }
@@ -117,7 +119,7 @@ export function HouseholdClient({ profile, household, members, categories: initi
                 <p className="text-sm font-quest font-bold text-gold">{member.personalPoints}</p>
                 <p className="text-xs text-fg-muted">{t('household.personalPts')}</p>
               </div>
-              {member.role === 'ADMIN' && <Badge variant="gold">{t('common.admin')}</Badge>}
+              {member.role === ROLE.ADMIN && <Badge variant="gold">{t('common.admin')}</Badge>}
             </motion.div>
           ))}
         </div>

@@ -188,6 +188,13 @@
     "REWARD_CLAIMED": "🏆 Reward claimed",
     "TASK_ASSIGNED": "📜 Quest assigned to me",
     "POINTS_MILESTONE": "⭐ Points milestone",
-    "DAILY_SUMMARY": "🌅 Daily digest"
+    "DAILY_SUMMARY": "🌅 Daily digest",
+    "push": {
+      "questComplete": "⚔️ Quest Complete!",
+      "questAssigned": "📜 New Quest Assigned",
+      "treasureClaimed": "🏆 Treasure Claimed!",
+      "dailyDigest": "🌅 Daily Quest Report",
+      "questDueSoon": "⏰ Quest Due Soon!"
+    }
   }
 }

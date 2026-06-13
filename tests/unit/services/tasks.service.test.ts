@@ -29,8 +29,6 @@ import { db } from '@/lib/db/implementation'
 import { notificationsService } from '@/lib/services/notifications.service'
 import { pointsService } from '@/lib/services/points.service'
 
-const mockDb = vi.mocked(db)
-
 function makeTask(overrides = {}) {
   return {
     id: 'task-1',
@@ -54,8 +52,8 @@ function makeTask(overrides = {}) {
 }
 
 beforeEach(() => {
-  mockDb.tasks.create.mockResolvedValue(makeTask() as any)
-  mockDb.tasks.complete.mockResolvedValue(makeTask({ status: 'DONE' }) as any)
+  vi.mocked(db.tasks.create).mockResolvedValue(makeTask() as any)
+  vi.mocked(db.tasks.complete).mockResolvedValue(makeTask({ status: 'DONE' }) as any)
 })
 
 describe('tasksService.create', () => {
@@ -70,7 +68,7 @@ describe('tasksService.create', () => {
       type: 'ONE_OFF' as const,
     }
     await tasksService.create(input)
-    expect(mockDb.tasks.create).toHaveBeenCalledWith(input)
+    expect(vi.mocked(db.tasks.create)).toHaveBeenCalledWith(input)
   })
 
   it('does NOT send assignment notification when assignedToId is null', async () => {
@@ -80,7 +78,7 @@ describe('tasksService.create', () => {
 
   it('sends assignment notification when assignedToId is set', async () => {
     const assignedTask = makeTask({ assignedToId: 'profile-2' })
-    mockDb.tasks.create.mockResolvedValue(assignedTask as any)
+    vi.mocked(db.tasks.create).mockResolvedValue(assignedTask as any)
     await tasksService.create({ householdId: 'hh-1', categoryId: 'cat-1', createdById: 'p1', title: 'Task', points: 10, pointsType: 'PERSONAL', type: 'ONE_OFF', assignedToId: 'profile-2' })
     expect(vi.mocked(notificationsService).sendTaskAssigned).toHaveBeenCalledTimes(1)
   })
@@ -89,7 +87,7 @@ describe('tasksService.create', () => {
 describe('tasksService.complete', () => {
   it('calls db.tasks.complete with taskId and userId', async () => {
     await tasksService.complete('task-1', 'profile-1')
-    expect(mockDb.tasks.complete).toHaveBeenCalledWith('task-1', 'profile-1')
+    expect(vi.mocked(db.tasks.complete)).toHaveBeenCalledWith('task-1', 'profile-1')
   })
 
   it('calls pointsService.awardForTask after completing', async () => {

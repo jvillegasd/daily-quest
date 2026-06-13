@@ -24,8 +24,6 @@ import { rewardsService } from '@/lib/services/rewards.service'
 import { db } from '@/lib/db/implementation'
 import { pointsService } from '@/lib/services/points.service'
 
-const mockDb = vi.mocked(db)
-
 function makeReward(overrides = {}) {
   return {
     id: 'reward-1',
@@ -55,29 +53,29 @@ function makeProfile(overrides = {}) {
 }
 
 beforeEach(() => {
-  mockDb.rewards.findById.mockResolvedValue(makeReward() as any)
-  mockDb.rewards.getLastClaim.mockResolvedValue(null)
-  mockDb.rewards.claim.mockResolvedValue({ id: 'claim-1', rewardId: 'reward-1', claimedById: 'profile-1', claimedAt: new Date() })
-  mockDb.profiles.findById.mockResolvedValue(makeProfile())
-  mockDb.households.findById.mockResolvedValue({ id: 'hh-1', sharedPoints: 500 } as any)
+  vi.mocked(db.rewards.findById).mockResolvedValue(makeReward() as any)
+  vi.mocked(db.rewards.getLastClaim).mockResolvedValue(null)
+  vi.mocked(db.rewards.claim).mockResolvedValue({ id: 'claim-1', rewardId: 'reward-1', claimedById: 'profile-1', claimedAt: new Date() })
+  vi.mocked(db.profiles.findById).mockResolvedValue(makeProfile())
+  vi.mocked(db.households.findById).mockResolvedValue({ id: 'hh-1', sharedPoints: 500 } as any)
 })
 
 describe('rewardsService.claim', () => {
   it('throws when reward not found', async () => {
-    mockDb.rewards.findById.mockResolvedValue(null)
+    vi.mocked(db.rewards.findById).mockResolvedValue(null)
     await expect(rewardsService.claim('reward-1', 'profile-1', 'hh-1'))
       .rejects.toThrow('Reward not found')
   })
 
   it('throws when non-repeatable reward already claimed', async () => {
-    mockDb.rewards.findById.mockResolvedValue(makeReward({ repeatable: false, timesClaimed: 1 }) as any)
+    vi.mocked(db.rewards.findById).mockResolvedValue(makeReward({ repeatable: false, timesClaimed: 1 }) as any)
     await expect(rewardsService.claim('reward-1', 'profile-1', 'hh-1'))
       .rejects.toThrow('already been claimed')
   })
 
   it('throws when repeatable reward is within cooldown', async () => {
-    mockDb.rewards.findById.mockResolvedValue(makeReward({ repeatable: true, cooldownHours: 24 }) as any)
-    mockDb.rewards.getLastClaim.mockResolvedValue({
+    vi.mocked(db.rewards.findById).mockResolvedValue(makeReward({ repeatable: true, cooldownHours: 24 }) as any)
+    vi.mocked(db.rewards.getLastClaim).mockResolvedValue({
       id: 'c1',
       rewardId: 'reward-1',
       claimedById: 'profile-1',
@@ -88,8 +86,8 @@ describe('rewardsService.claim', () => {
   })
 
   it('allows claim when repeatable cooldown has expired', async () => {
-    mockDb.rewards.findById.mockResolvedValue(makeReward({ repeatable: true, cooldownHours: 24 }) as any)
-    mockDb.rewards.getLastClaim.mockResolvedValue({
+    vi.mocked(db.rewards.findById).mockResolvedValue(makeReward({ repeatable: true, cooldownHours: 24 }) as any)
+    vi.mocked(db.rewards.getLastClaim).mockResolvedValue({
       id: 'c1',
       rewardId: 'reward-1',
       claimedById: 'profile-1',
@@ -99,14 +97,14 @@ describe('rewardsService.claim', () => {
   })
 
   it('throws when not enough personal points', async () => {
-    mockDb.profiles.findById.mockResolvedValue(makeProfile({ personalPoints: 50 }))
+    vi.mocked(db.profiles.findById).mockResolvedValue(makeProfile({ personalPoints: 50 }))
     await expect(rewardsService.claim('reward-1', 'profile-1', 'hh-1'))
       .rejects.toThrow('Not enough personal points')
   })
 
   it('throws when not enough shared points', async () => {
-    mockDb.rewards.findById.mockResolvedValue(makeReward({ costType: 'SHARED', cost: 1000 }) as any)
-    mockDb.households.findById.mockResolvedValue({ id: 'hh-1', sharedPoints: 50 } as any)
+    vi.mocked(db.rewards.findById).mockResolvedValue(makeReward({ costType: 'SHARED', cost: 1000 }) as any)
+    vi.mocked(db.households.findById).mockResolvedValue({ id: 'hh-1', sharedPoints: 50 } as any)
     await expect(rewardsService.claim('reward-1', 'profile-1', 'hh-1'))
       .rejects.toThrow('Not enough shared points')
   })
@@ -114,18 +112,18 @@ describe('rewardsService.claim', () => {
   it('calls pointsService.spendForReward and db.rewards.claim on success', async () => {
     await rewardsService.claim('reward-1', 'profile-1', 'hh-1')
     expect(vi.mocked(pointsService).spendForReward).toHaveBeenCalledWith('profile-1', 'hh-1', 100, 'PERSONAL')
-    expect(mockDb.rewards.claim).toHaveBeenCalledWith('reward-1', 'profile-1')
+    expect(vi.mocked(db.rewards.claim)).toHaveBeenCalledWith('reward-1', 'profile-1')
   })
 })
 
 describe('rewardsService.getCooldownRemaining', () => {
   it('returns 0 when never claimed', async () => {
-    mockDb.rewards.getLastClaim.mockResolvedValue(null)
+    vi.mocked(db.rewards.getLastClaim).mockResolvedValue(null)
     expect(await rewardsService.getCooldownRemaining('r1', 'u1', 24)).toBe(0)
   })
 
   it('returns remaining ms when within cooldown', async () => {
-    mockDb.rewards.getLastClaim.mockResolvedValue({
+    vi.mocked(db.rewards.getLastClaim).mockResolvedValue({
       claimedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
     } as any)
     const remaining = await rewardsService.getCooldownRemaining('r1', 'u1', 24)
@@ -134,7 +132,7 @@ describe('rewardsService.getCooldownRemaining', () => {
   })
 
   it('returns 0 when cooldown has expired', async () => {
-    mockDb.rewards.getLastClaim.mockResolvedValue({
+    vi.mocked(db.rewards.getLastClaim).mockResolvedValue({
       claimedAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
     } as any)
     expect(await rewardsService.getCooldownRemaining('r1', 'u1', 24)).toBe(0)

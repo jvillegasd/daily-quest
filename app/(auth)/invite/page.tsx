@@ -73,9 +73,14 @@ function InviteForm() {
   )
 }
 
+function LoadingFallback() {
+  const { t } = useTranslation()
+  return <div className="text-center text-fg-muted">{t('common.loading')}</div>
+}
+
 export default function InvitePage() {
   return (
-    <Suspense fallback={<div className="text-center text-fg-muted">Loading...</div>}>
+    <Suspense fallback={<LoadingFallback />}>
       <InviteForm />
     </Suspense>
   )

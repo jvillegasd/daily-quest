@@ -11,6 +11,19 @@ export type NotificationEvent =
   | 'POINTS_MILESTONE'
   | 'DAILY_SUMMARY'
 
+export const ROLE = { ADMIN: 'ADMIN', MEMBER: 'MEMBER' } as const satisfies Record<string, Role>
+export const TASK_TYPE = { ONE_OFF: 'ONE_OFF', RECURRING: 'RECURRING' } as const satisfies Record<string, TaskType>
+export const TASK_STATUS = { PENDING: 'PENDING', DONE: 'DONE', SKIPPED: 'SKIPPED' } as const satisfies Record<string, TaskStatus>
+export const POINTS_TYPE = { PERSONAL: 'PERSONAL', SHARED: 'SHARED' } as const satisfies Record<string, PointsType>
+export const REWARD_TYPE = { VIRTUAL: 'VIRTUAL', PLEDGE: 'PLEDGE' } as const satisfies Record<string, RewardType>
+
+export const TASK_FILTER = { ALL: 'all', MINE: 'mine', OPEN: 'open', DONE: 'done' } as const
+export type TaskFilter = typeof TASK_FILTER[keyof typeof TASK_FILTER]
+
+export const TASK_ACTION = { COMPLETE: 'complete', SKIP: 'skip' } as const
+
+export const LEVEL = { MAX: 50, XP_MULTIPLIER: 100 } as const
+
 export interface Household {
   id: string
   name: string
@@ -29,6 +42,7 @@ export interface Profile {
   personalPoints: number
   level: number
   role: Role
+  locale: string
   createdAt: Date
 }
 
@@ -176,13 +190,23 @@ export function getLevelKey(level: number): string {
   return 'levels.novice'
 }
 
+export const FORM_DEFAULTS: {
+  TASK: { points: number; pointsType: PointsType; type: TaskType }
+  REWARD: { icon: string; type: RewardType; cost: number; costType: PointsType; repeatable: boolean; cooldownHours: number }
+  CATEGORY: { icon: string; color: string; defaultPoints: number }
+} = {
+  TASK: { points: 10, pointsType: POINTS_TYPE.PERSONAL, type: TASK_TYPE.ONE_OFF },
+  REWARD: { icon: '🏆', type: REWARD_TYPE.PLEDGE, cost: 100, costType: POINTS_TYPE.PERSONAL, repeatable: true, cooldownHours: 24 },
+  CATEGORY: { icon: '📌', color: '#c9a84c', defaultPoints: 10 },
+}
+
 export function getPointsForLevel(level: number): number {
-  return level * level * 100
+  return level * level * LEVEL.XP_MULTIPLIER
 }
 
 export function getLevelFromPoints(points: number): number {
   let level = 1
-  while (getPointsForLevel(level + 1) <= points && level < 50) level++
+  while (getPointsForLevel(level + 1) <= points && level < LEVEL.MAX) level++
   return level
 }
 

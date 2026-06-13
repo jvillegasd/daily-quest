@@ -79,9 +79,14 @@ function SignupForm() {
   )
 }
 
+function LoadingFallback() {
+  const { t } = useTranslation()
+  return <div className="text-center text-fg-muted">{t('common.loading')}</div>
+}
+
 export default function SignupPage() {
   return (
-    <Suspense fallback={<div className="text-center text-fg-muted">Loading...</div>}>
+    <Suspense fallback={<LoadingFallback />}>
       <SignupForm />
     </Suspense>
   )

@@ -1,0 +1,15 @@
+export const ANIMATION = {
+  CONTAINER_STAGGER: 0.08,
+  SPRING_DAMPING: 20,
+  SPRING_STIFFNESS: 300,
+  XP_DURATION: 1.2,
+  CELEBRATION_MS: 2000,
+}
+
+export const CONFETTI = {
+  COUNT: 24,
+  MAX_ROTATION: 720,
+  DURATION: 1.5,
+  MAX_DELAY: 0.3,
+  COLORS: ['#c9a84c', '#e6b84a', '#16a34a', '#2563eb', '#dc2626'] as const,
+}

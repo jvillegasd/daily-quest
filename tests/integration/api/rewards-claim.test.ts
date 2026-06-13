@@ -14,7 +14,7 @@ describe('POST /api/rewards/[id]/claim', () => {
   useTestDb()
 
   it('returns 401 when unauthenticated', async () => {
-    vi.mocked(auth).mockResolvedValue(null)
+    vi.mocked(auth).mockResolvedValue(null as any)
     const req = makeRequest('POST', 'http://localhost/api/rewards/r1/claim')
     const res = await POST(req as any, { params: makeParams({ id: 'r1' }) })
     expect(res.status).toBe(401)

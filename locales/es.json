@@ -188,6 +188,13 @@
     "REWARD_CLAIMED": "🏆 Recompensa reclamada",
     "TASK_ASSIGNED": "📜 Misión asignada a mí",
     "POINTS_MILESTONE": "⭐ Hito de puntos",
-    "DAILY_SUMMARY": "🌅 Resumen diario"
+    "DAILY_SUMMARY": "🌅 Resumen diario",
+    "push": {
+      "questComplete": "⚔️ ¡Misión Completada!",
+      "questAssigned": "📜 Nueva Misión Asignada",
+      "treasureClaimed": "🏆 ¡Tesoro Reclamado!",
+      "dailyDigest": "🌅 Reporte Diario de Misiones",
+      "questDueSoon": "⏰ ¡Misión por Vencer!"
+    }
   }
 }

@@ -86,6 +86,7 @@ model Profile {
   personalPoints Int     @default(0)
   level          Int     @default(1)
   role           Role    @default(MEMBER)
+  locale         String  @default("en")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

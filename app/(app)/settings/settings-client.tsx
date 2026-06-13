@@ -9,7 +9,11 @@ import { Avatar, LevelBadge } from '@/components/layout/avatar'
 import { Badge } from '@/components/ui/badge'
 import { signOut } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n/use-translation'
+import { SUPPORTED_LOCALES } from '@/lib/i18n/locale-context'
+import type { Locale } from '@/lib/i18n/locale-context'
 import type { Profile, NotificationPreference, NotificationEvent } from '@/lib/types'
+import { API } from '@/lib/constants'
+import { ROUTES } from '@/lib/constants'
 
 const ALL_EVENTS: NotificationEvent[] = [
   'TASK_PENDING', 'TASK_COMPLETED_BY_PARTNER', 'REWARD_CLAIMED',
@@ -47,7 +51,7 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
       userVisibleOnly: true,
       applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
     })
-    await fetch('/api/notifications/subscribe', {
+    await fetch(API.NOTIFICATIONS_SUBSCRIBE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ endpoint: sub.endpoint, keys: sub.toJSON().keys }),
@@ -58,15 +62,24 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
   async function togglePref(event: NotificationEvent) {
     const enabled = !prefs[event]
     setPrefs((p) => ({ ...p, [event]: enabled }))
-    await fetch('/api/notifications/preferences', {
+    await fetch(API.NOTIFICATIONS_PREFERENCES, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ eventType: event, enabled }),
     })
   }
 
+  async function handleLocaleChange(l: Locale) {
+    setLocale(l)
+    await fetch(API.PROFILE, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locale: l }),
+    })
+  }
+
   async function handleSignOut() {
-    await signOut({ callbackUrl: '/login' })
+    await signOut({ callbackUrl: ROUTES.LOGIN })
   }
 
   const EVENT_LABELS: Record<NotificationEvent, string> = {
@@ -139,12 +152,12 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
           </CardHeader>
           <div className="flex gap-2">
             {([
-              { value: 'en' as const, label: t('settings.languageEnglish'), flag: '🇬🇧' },
-              { value: 'es' as const, label: t('settings.languageSpanish'), flag: '🇪🇸' },
-            ]).map(({ value, label, flag }) => (
+              { value: SUPPORTED_LOCALES[0], label: t('settings.languageEnglish'), flag: '🇬🇧' },
+              { value: SUPPORTED_LOCALES[1], label: t('settings.languageSpanish'), flag: '🇪🇸' },
+            ] as { value: Locale; label: string; flag: string }[]).map(({ value, label, flag }) => (
               <button
                 key={value}
-                onClick={() => setLocale(value)}
+                onClick={() => handleLocaleChange(value)}
                 className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg border text-xs font-semibold transition-all ${
                   locale === value ? 'bg-gold/15 border-gold text-gold' : 'border-border text-fg-muted hover:text-fg'
                 }`}

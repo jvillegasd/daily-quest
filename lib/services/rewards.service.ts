@@ -2,6 +2,7 @@ import { db } from '@/lib/db/implementation'
 import { pointsService } from './points.service'
 import { notificationsService } from './notifications.service'
 import type { CreateRewardInput, Reward } from '@/lib/types'
+import { TIME } from '@/lib/constants'
 
 export const rewardsService = {
   async getByHousehold(householdId: string): Promise<Reward[]> {
@@ -27,10 +28,10 @@ export const rewardsService = {
     if (reward.repeatable) {
       const lastClaim = await db.rewards.getLastClaim(rewardId, claimedById)
       if (lastClaim) {
-        const cooldownMs = reward.cooldownHours * 60 * 60 * 1000
+        const cooldownMs = reward.cooldownHours * TIME.HOUR_MS
         const timeSinceClaim = Date.now() - lastClaim.claimedAt.getTime()
         if (timeSinceClaim < cooldownMs) {
-          const hoursLeft = Math.ceil((cooldownMs - timeSinceClaim) / (60 * 60 * 1000))
+          const hoursLeft = Math.ceil((cooldownMs - timeSinceClaim) / TIME.HOUR_MS)
           throw new Error(`Reward on cooldown. Available in ${hoursLeft}h`)
         }
       }
@@ -60,7 +61,7 @@ export const rewardsService = {
   async getCooldownRemaining(rewardId: string, userId: string, cooldownHours: number): Promise<number> {
     const lastClaim = await db.rewards.getLastClaim(rewardId, userId)
     if (!lastClaim) return 0
-    const cooldownMs = cooldownHours * 60 * 60 * 1000
+    const cooldownMs = cooldownHours * TIME.HOUR_MS
     const elapsed = Date.now() - lastClaim.claimedAt.getTime()
     return Math.max(0, cooldownMs - elapsed)
   },

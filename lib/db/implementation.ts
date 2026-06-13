@@ -1,6 +1,7 @@
 import { prisma } from './prisma'
 import type { Database } from './index'
 import { DEFAULT_CATEGORIES, getLevelFromPoints } from '@/lib/types'
+import { TIME } from '@/lib/constants'
 
 export const db: Database = {
   households: {
@@ -139,7 +140,7 @@ export const db: Database = {
       await prisma.task.delete({ where: { id } })
     },
     async findPendingDue(householdId, withinHours) {
-      const deadline = new Date(Date.now() + withinHours * 60 * 60 * 1000)
+      const deadline = new Date(Date.now() + withinHours * TIME.HOUR_MS)
       return prisma.task.findMany({
         where: { householdId, status: 'PENDING', dueAt: { lte: deadline } },
         include: { assignedTo: true },
@@ -207,18 +208,27 @@ export const db: Database = {
       await prisma.pushSubscription.deleteMany({ where: { endpoint } })
     },
     async getPushSubscriptions(profileId) {
-      return prisma.pushSubscription.findMany({ where: { profileId } })
+      const profile = await prisma.profile.findUnique({
+        where: { id: profileId },
+        select: { locale: true, pushSubscriptions: true },
+      })
+      if (!profile) return []
+      return profile.pushSubscriptions.map((s: { endpoint: string; keysJson: string }) => ({
+        ...s,
+        locale: profile.locale,
+      }))
     },
     async getHouseholdPushSubscriptions(householdId) {
       const profiles = await prisma.profile.findMany({
         where: { householdId },
-        include: { pushSubscriptions: true },
+        select: { id: true, locale: true, pushSubscriptions: true },
       })
-      return profiles.flatMap((p: { id: string; pushSubscriptions: { endpoint: string; keysJson: string }[] }) =>
+      return profiles.flatMap((p: { id: string; locale: string; pushSubscriptions: { endpoint: string; keysJson: string }[] }) =>
         p.pushSubscriptions.map((s) => ({
           endpoint: s.endpoint,
           keysJson: s.keysJson,
           profileId: p.id,
+          locale: p.locale,
         }))
       )
     },
