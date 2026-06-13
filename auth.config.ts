@@ -12,7 +12,6 @@ export const authConfig: NextAuthConfig = {
       const isSignupHousehold = nextUrl.pathname === '/signup' && nextUrl.searchParams.get('step') === 'household'
       const isAuthPath =
         nextUrl.pathname.startsWith('/login') ||
-        nextUrl.pathname.startsWith('/signup') ||
         nextUrl.pathname.startsWith('/invite')
 
       // Let logged-in users access the household setup step
