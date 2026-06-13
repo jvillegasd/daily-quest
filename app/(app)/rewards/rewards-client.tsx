@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { useTranslation } from '@/lib/i18n/use-translation'
+import { EmojiPicker } from '@/components/ui/emoji-picker'
 import type { Profile, Reward, Household } from '@/lib/types'
 
 interface Props {
@@ -160,7 +161,7 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title={t('rewards.createTitle')}>
         <form onSubmit={handleCreate} className="space-y-3">
           <div className="grid grid-cols-5 gap-2">
-            <Input label={t('rewards.iconLabel')} value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} className="col-span-1 text-center text-xl" />
+            <EmojiPicker label={t('rewards.iconLabel')} value={form.icon} onChange={(emoji) => setForm({ ...form, icon: emoji })} />
             <div className="col-span-4">
               <Input label={t('rewards.rewardTitleLabel')} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('rewards.rewardTitlePlaceholder')} required />
             </div>
