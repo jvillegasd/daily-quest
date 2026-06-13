@@ -11,10 +11,16 @@ export const authConfig: NextAuthConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
       const isSignupHousehold = nextUrl.pathname === ROUTES.SIGNUP && nextUrl.searchParams.get('step') === 'household'
+      const isPublicPath =
+        nextUrl.pathname === '/' ||
+        nextUrl.pathname.startsWith('/privacy')
+
       const isAuthPath =
         nextUrl.pathname.startsWith(ROUTES.LOGIN) ||
         nextUrl.pathname.startsWith(ROUTES.SIGNUP) ||
         nextUrl.pathname.startsWith(ROUTES.INVITE)
+
+      if (isPublicPath) return true
 
       // Let logged-in users access the household setup step
       if (isSignupHousehold) return true
