@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, Bell, LogOut } from 'lucide-react'
+import { Sun, Moon, Bell, LogOut, Trash2 } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, LevelBadge } from '@/components/layout/avatar'
@@ -30,6 +30,8 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
   const { locale, setLocale, t } = useTranslation()
   const [mounted, setMounted] = useState(false)
   const [pushEnabled, setPushEnabled] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [prefs, setPrefs] = useState<Record<string, boolean>>(() => {
     const map: Record<string, boolean> = {}
     ALL_EVENTS.forEach((e) => {
@@ -79,6 +81,12 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
   }
 
   async function handleSignOut() {
+    await signOut({ callbackUrl: ROUTES.LOGIN })
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true)
+    await fetch(API.PROFILE, { method: 'DELETE' })
     await signOut({ callbackUrl: ROUTES.LOGIN })
   }
 
@@ -202,6 +210,33 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
         <Button variant="danger" className="w-full" onClick={handleSignOut}>
           <LogOut size={14} /> {t('settings.signOut')}
         </Button>
+      </Card>
+
+      {/* Danger zone */}
+      <Card className="border-ruby/40">
+        <CardHeader>
+          <CardTitle className="text-ruby">Danger Zone</CardTitle>
+        </CardHeader>
+        <p className="text-sm text-fg-muted mb-4">
+          Permanently delete your account and all associated data. This cannot be undone.
+        </p>
+        {!deleteConfirm ? (
+          <Button variant="danger" className="w-full" onClick={() => setDeleteConfirm(true)}>
+            <Trash2 size={14} /> Delete My Account
+          </Button>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-ruby text-center">Are you absolutely sure?</p>
+            <div className="flex gap-2">
+              <Button variant="ghost" className="flex-1" onClick={() => setDeleteConfirm(false)} disabled={deleting}>
+                Cancel
+              </Button>
+              <Button variant="danger" className="flex-1" onClick={handleDeleteAccount} disabled={deleting}>
+                {deleting ? 'Deleting…' : 'Yes, delete everything'}
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   )
