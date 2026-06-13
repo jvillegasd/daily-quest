@@ -94,12 +94,12 @@ export default function PrivacyPage() {
       <footer className="border-t border-border px-6 py-4 text-center text-sm text-fg-subtle">
         vibecoded with love by{' '}
         <a
-          href="https://github.com/linkrs"
+          href="https://github.com/jvillegasd"
           target="_blank"
           rel="noopener noreferrer"
           className="text-gold hover:text-gold-bright transition-colors underline underline-offset-2"
         >
-          linkrs
+          jvillegasd
         </a>
       </footer>
     </div>

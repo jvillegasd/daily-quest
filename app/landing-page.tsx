@@ -141,12 +141,12 @@ export function LandingPage() {
         <span>
           vibecoded with love by{' '}
           <a
-            href="https://github.com/linkrs"
+            href="https://github.com/jvillegasd"
             target="_blank"
             rel="noopener noreferrer"
             className="text-gold hover:text-gold-bright transition-colors underline underline-offset-2"
           >
-            linkrs
+            jvillegasd
           </a>
         </span>
         <Link href="/privacy" className="hover:text-fg-muted transition-colors">
