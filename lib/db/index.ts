@@ -35,6 +35,7 @@ export interface ProfileRepository {
 }
 
 export interface CategoryRepository {
+  findById(id: string): Promise<Category | null>
   findByHousehold(householdId: string): Promise<Category[]>
   create(data: Omit<Category, 'id'>): Promise<Category>
   update(id: string, data: Partial<Omit<Category, 'id' | 'householdId'>>): Promise<Category>

@@ -73,6 +73,9 @@ export const db: Database = {
   },
 
   categories: {
+    async findById(id) {
+      return prisma.category.findUnique({ where: { id } })
+    },
     async findByHousehold(householdId) {
       const rows = await prisma.category.findMany({
         where: { householdId },
