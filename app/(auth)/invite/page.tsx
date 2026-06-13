@@ -6,8 +6,10 @@ import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
+import { useTranslation } from '@/lib/i18n/use-translation'
 
 function InviteForm() {
+  const { t } = useTranslation()
   const params = useSearchParams()
   const token = params.get('token')
   const [name, setName] = useState('')
@@ -36,7 +38,7 @@ function InviteForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name }),
     })
-    if (!reg.ok) { const d = await reg.json(); setError(d.error ?? 'Signup failed'); setLoading(false); return }
+    if (!reg.ok) { const d = await reg.json(); setError(d.error ?? t('auth.signupFailed')); setLoading(false); return }
 
     await signIn('credentials', { email, password, redirect: false })
 
@@ -45,7 +47,7 @@ function InviteForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     })
-    if (!accept.ok) { setError('Failed to join household'); setLoading(false); return }
+    if (!accept.ok) { setError(t('auth.joinHouseholdFailed')); setLoading(false); return }
     window.location.href = '/dashboard'
   }
 
@@ -53,15 +55,19 @@ function InviteForm() {
     <Card>
       <div className="text-center mb-6">
         <div className="text-3xl mb-2">🏰</div>
-        <h2 className="font-quest text-xl font-bold text-fg">You&apos;re Invited!</h2>
-        {householdName && <p className="text-fg-muted text-sm mt-1">Join <span className="text-gold font-semibold">{householdName}</span></p>}
+        <h2 className="font-quest text-xl font-bold text-fg">{t('auth.youreInvited')}</h2>
+        {householdName && (
+          <p className="text-fg-muted text-sm mt-1">
+            {t('auth.joinHousehold', { name: householdName })}
+          </p>
+        )}
       </div>
       <form onSubmit={handleAccept} className="space-y-4">
-        <Input label="Your Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Hero Name" required />
-        <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="hero@realm.com" required />
-        <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" minLength={6} required />
+        <Input label={t('auth.yourName')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('auth.heroNamePlaceholder')} required />
+        <Input label={t('auth.emailLabel')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('auth.emailPlaceholder')} required />
+        <Input label={t('auth.passwordLabel')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('auth.passwordPlaceholder')} minLength={6} required />
         {error && <p className="text-sm text-ruby">{error}</p>}
-        <Button type="submit" className="w-full" size="lg" loading={loading}>🏰 Join the Household</Button>
+        <Button type="submit" className="w-full" size="lg" loading={loading}>{t('auth.joinHouseholdBtn')}</Button>
       </form>
     </Card>
   )

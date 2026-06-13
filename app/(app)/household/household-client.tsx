@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, LevelBadge } from '@/components/layout/avatar'
+import { useTranslation } from '@/lib/i18n/use-translation'
 import type { Profile, Household, Category } from '@/lib/types'
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function HouseholdClient({ profile, household, members, categories: initialCats }: Props) {
+  const { t } = useTranslation()
   const [categories, setCategories] = useState<Category[]>(initialCats)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
@@ -33,7 +35,7 @@ export function HouseholdClient({ profile, household, members, categories: initi
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: inviteEmail }),
     })
-    setInviteMsg(res.ok ? '📨 Invitation sent!' : 'Failed to send invite')
+    setInviteMsg(res.ok ? t('household.inviteSent') : t('household.inviteFailed'))
     setInviting(false)
     setInviteEmail('')
   }
@@ -60,14 +62,14 @@ export function HouseholdClient({ profile, household, members, categories: initi
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="font-quest text-2xl font-bold text-fg">🏰 {household.name}</h1>
-        <p className="text-fg-muted text-sm">Manage your household party</p>
+        <p className="text-fg-muted text-sm">{t('household.subtitle')}</p>
       </div>
 
       {/* Members */}
       <Card>
         <CardHeader>
-          <CardTitle>Party Members</CardTitle>
-          <Badge variant="muted">{members.length} heroes</Badge>
+          <CardTitle>{t('household.partyMembers')}</CardTitle>
+          <Badge variant="muted">{t('household.heroCount', { count: members.length })}</Badge>
         </CardHeader>
         <div className="space-y-3">
           {members.map((member) => (
@@ -90,9 +92,9 @@ export function HouseholdClient({ profile, household, members, categories: initi
               </div>
               <div className="text-right">
                 <p className="text-sm font-quest font-bold text-gold">{member.personalPoints}</p>
-                <p className="text-xs text-fg-muted">personal pts</p>
+                <p className="text-xs text-fg-muted">{t('household.personalPts')}</p>
               </div>
-              {member.role === 'ADMIN' && <Badge variant="gold">Admin</Badge>}
+              {member.role === 'ADMIN' && <Badge variant="gold">{t('common.admin')}</Badge>}
             </motion.div>
           ))}
         </div>
@@ -101,19 +103,19 @@ export function HouseholdClient({ profile, household, members, categories: initi
       {/* Invite */}
       <Card>
         <CardHeader>
-          <CardTitle>Invite Hero</CardTitle>
+          <CardTitle>{t('household.inviteHero')}</CardTitle>
         </CardHeader>
         <form onSubmit={handleInvite} className="flex gap-2">
           <Input
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
-            placeholder="hero@realm.com"
+            placeholder={t('household.invitePlaceholder')}
             type="email"
             className="flex-1"
             required
           />
           <Button type="submit" size="md" loading={inviting}>
-            <Send size={14} /> Invite
+            <Send size={14} /> {t('household.inviteBtn')}
           </Button>
         </form>
         {inviteMsg && <p className="text-sm text-emerald mt-2">{inviteMsg}</p>}
@@ -122,9 +124,9 @@ export function HouseholdClient({ profile, household, members, categories: initi
       {/* Categories */}
       <Card>
         <CardHeader>
-          <CardTitle>Quest Categories</CardTitle>
+          <CardTitle>{t('household.questCategories')}</CardTitle>
           <Button size="sm" variant="outline" onClick={() => setAddingCat(!addingCat)}>
-            <Plus size={14} /> Add
+            <Plus size={14} /> {t('household.addBtn')}
           </Button>
         </CardHeader>
 
@@ -135,21 +137,21 @@ export function HouseholdClient({ profile, household, members, categories: initi
             className="mb-4 p-3 rounded-lg bg-bg-elevated border border-border space-y-3"
           >
             <div className="grid grid-cols-4 gap-2">
-              <Input label="Icon" value={newCat.icon} onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })} className="text-center" />
+              <Input label={t('household.categoryIconLabel')} value={newCat.icon} onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })} className="text-center" />
               <div className="col-span-3">
-                <Input label="Name" value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value })} placeholder="Category name" required />
+                <Input label={t('household.categoryNameLabel')} value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value })} placeholder={t('household.categoryNamePlaceholder')} required />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-semibold text-fg-muted">Color</label>
+                <label className="text-sm font-semibold text-fg-muted">{t('household.categoryColorLabel')}</label>
                 <input type="color" value={newCat.color} onChange={(e) => setNewCat({ ...newCat, color: e.target.value })} className="h-9 w-full rounded-lg border border-border cursor-pointer" />
               </div>
-              <Input label="Default Points" type="number" min={1} value={newCat.defaultPoints} onChange={(e) => setNewCat({ ...newCat, defaultPoints: Number(e.target.value) })} />
+              <Input label={t('household.categoryDefaultPtsLabel')} type="number" min={1} value={newCat.defaultPoints} onChange={(e) => setNewCat({ ...newCat, defaultPoints: Number(e.target.value) })} />
             </div>
             <div className="flex gap-2">
-              <Button type="button" variant="ghost" size="sm" className="flex-1" onClick={() => setAddingCat(false)}>Cancel</Button>
-              <Button type="submit" size="sm" className="flex-1">Add Category</Button>
+              <Button type="button" variant="ghost" size="sm" className="flex-1" onClick={() => setAddingCat(false)}>{t('common.cancel')}</Button>
+              <Button type="submit" size="sm" className="flex-1">{t('household.addCategory')}</Button>
             </div>
           </motion.form>
         )}
@@ -162,10 +164,10 @@ export function HouseholdClient({ profile, household, members, categories: initi
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-fg">{cat.name}</p>
-                <p className="text-xs text-fg-muted">Default: {cat.defaultPoints} pts</p>
+                <p className="text-xs text-fg-muted">{t('household.defaultPts', { count: cat.defaultPoints })}</p>
               </div>
               {cat.isDefault ? (
-                <Badge variant="muted">Default</Badge>
+                <Badge variant="muted">{t('common.default')}</Badge>
               ) : (
                 <Button variant="danger" size="sm" onClick={() => handleDeleteCategory(cat.id)}>
                   <Trash2 size={12} />

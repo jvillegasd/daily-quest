@@ -7,8 +7,10 @@ import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
+import { useTranslation } from '@/lib/i18n/use-translation'
 
 function SignupForm() {
+  const { t } = useTranslation()
   const params = useSearchParams()
   const step = params.get('step')
   const [email, setEmail] = useState('')
@@ -27,7 +29,7 @@ function SignupForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name }),
     })
-    if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Signup failed'); setLoading(false); return }
+    if (!res.ok) { const d = await res.json(); setError(d.error ?? t('auth.signupFailed')); setLoading(false); return }
     await signIn('credentials', { email, password, redirect: false })
     window.location.href = '/signup?step=household'
   }
@@ -41,19 +43,19 @@ function SignupForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: householdName }),
     })
-    if (!res.ok) { setError('Failed to create household'); setLoading(false); return }
+    if (!res.ok) { setError(t('auth.householdFailed')); setLoading(false); return }
     window.location.href = '/dashboard'
   }
 
   if (step === 'household') {
     return (
       <Card>
-        <h2 className="font-quest text-xl font-bold text-fg mb-2 text-center">Name Your Household</h2>
-        <p className="text-fg-muted text-sm text-center mb-6">This is your party&apos;s home base</p>
+        <h2 className="font-quest text-xl font-bold text-fg mb-2 text-center">{t('auth.nameHousehold')}</h2>
+        <p className="text-fg-muted text-sm text-center mb-6">{t('auth.householdSubtitle')}</p>
         <form onSubmit={handleCreateHousehold} className="space-y-4">
-          <Input label="Household Name" value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="The Brave House of ..." required />
+          <Input label={t('auth.householdNameLabel')} value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder={t('auth.householdNamePlaceholder')} required />
           {error && <p className="text-sm text-ruby">{error}</p>}
-          <Button type="submit" className="w-full" size="lg" loading={loading}>⚔️ Establish Household</Button>
+          <Button type="submit" className="w-full" size="lg" loading={loading}>{t('auth.establishHousehold')}</Button>
         </form>
       </Card>
     )
@@ -61,17 +63,17 @@ function SignupForm() {
 
   return (
     <Card>
-      <h2 className="font-quest text-xl font-bold text-fg mb-6 text-center">Join the Adventure</h2>
+      <h2 className="font-quest text-xl font-bold text-fg mb-6 text-center">{t('auth.joinAdventure')}</h2>
       <form onSubmit={handleSignup} className="space-y-4">
-        <Input label="Your Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Hero Name" required />
-        <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="hero@realm.com" required />
-        <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" minLength={6} required />
+        <Input label={t('auth.yourName')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('auth.heroNamePlaceholder')} required />
+        <Input label={t('auth.emailLabel')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('auth.emailPlaceholder')} required />
+        <Input label={t('auth.passwordLabel')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('auth.passwordPlaceholder')} minLength={6} required />
         {error && <p className="text-sm text-ruby">{error}</p>}
-        <Button type="submit" className="w-full" size="lg" loading={loading}>Create Account</Button>
+        <Button type="submit" className="w-full" size="lg" loading={loading}>{t('auth.createAccount')}</Button>
       </form>
       <p className="text-center text-sm text-fg-muted mt-4">
-        Already a hero?{' '}
-        <Link href="/login" className="text-gold hover:text-gold-bright font-semibold">Sign in</Link>
+        {t('auth.alreadyHero')}{' '}
+        <Link href="/login" className="text-gold hover:text-gold-bright font-semibold">{t('auth.signIn')}</Link>
       </p>
     </Card>
   )

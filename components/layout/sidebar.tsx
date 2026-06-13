@@ -6,15 +6,8 @@ import { Scroll, Trophy, LayoutDashboard, Settings, Home } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Avatar, LevelBadge } from './avatar'
+import { useTranslation } from '@/lib/i18n/use-translation'
 import type { Profile } from '@/lib/types'
-
-const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Kingdom' },
-  { href: '/quests', icon: Scroll, label: 'Quest Log' },
-  { href: '/rewards', icon: Trophy, label: 'Treasure' },
-  { href: '/household', icon: Home, label: 'Household' },
-  { href: '/settings', icon: Settings, label: 'Settings' },
-]
 
 interface SidebarProps {
   profile: Profile
@@ -22,6 +15,15 @@ interface SidebarProps {
 
 export function Sidebar({ profile }: SidebarProps) {
   const pathname = usePathname()
+  const { t } = useTranslation()
+
+  const navItems = [
+    { href: '/dashboard', icon: LayoutDashboard, label: t('nav.kingdom') },
+    { href: '/quests', icon: Scroll, label: t('nav.questLog') },
+    { href: '/rewards', icon: Trophy, label: t('nav.treasure') },
+    { href: '/household', icon: Home, label: t('nav.household') },
+    { href: '/settings', icon: Settings, label: t('nav.settings') },
+  ]
 
   return (
     <aside className="flex h-full flex-col border-r border-border bg-bg-card w-60 shrink-0">

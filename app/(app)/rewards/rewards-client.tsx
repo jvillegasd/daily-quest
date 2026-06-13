@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Clock } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { useTranslation } from '@/lib/i18n/use-translation'
 import type { Profile, Reward, Household } from '@/lib/types'
 
 interface Props {
@@ -17,11 +18,12 @@ interface Props {
   household: Household
 }
 
-function RewardCard({ reward, canAfford, onClaim, loading }: {
+function RewardCard({ reward, canAfford, onClaim, loading, t }: {
   reward: Reward
   canAfford: boolean
   onClaim: () => void
   loading: boolean
+  t: (key: string, vars?: Record<string, string | number>) => string
 }) {
   return (
     <motion.div
@@ -36,9 +38,9 @@ function RewardCard({ reward, canAfford, onClaim, loading }: {
           <div className="text-3xl">{reward.icon}</div>
           <div className="flex gap-1.5 flex-wrap justify-end">
             <Badge variant={reward.type === 'VIRTUAL' ? 'sapphire' : 'amber'}>
-              {reward.type === 'VIRTUAL' ? '✨ Virtual' : '🎁 Pledge'}
+              {reward.type === 'VIRTUAL' ? t('rewards.virtual') : t('rewards.pledge')}
             </Badge>
-            {reward.repeatable && <Badge variant="muted">↺ Repeatable</Badge>}
+            {reward.repeatable && <Badge variant="muted">{t('rewards.repeatable')}</Badge>}
           </div>
         </div>
 
@@ -50,9 +52,9 @@ function RewardCard({ reward, canAfford, onClaim, loading }: {
         <div className="flex items-center justify-between mt-auto">
           <div>
             <Badge variant="gold">
-              {reward.cost} {reward.costType === 'PERSONAL' ? 'personal' : 'shared'} pts
+              {reward.cost} {reward.costType === 'PERSONAL' ? t('common.personal') : t('common.shared')} {t('common.pts')}
             </Badge>
-            <p className="text-xs text-fg-subtle mt-1">{reward.timesClaimed}× claimed</p>
+            <p className="text-xs text-fg-subtle mt-1">{t('rewards.timesClaimed', { count: reward.timesClaimed })}</p>
           </div>
           <Button
             variant="gold"
@@ -61,7 +63,7 @@ function RewardCard({ reward, canAfford, onClaim, loading }: {
             loading={loading}
             disabled={!canAfford}
           >
-            {canAfford ? '🏆 Claim' : '🔒 Locked'}
+            {canAfford ? t('rewards.claim') : t('rewards.locked')}
           </Button>
         </div>
       </Card>
@@ -70,6 +72,7 @@ function RewardCard({ reward, canAfford, onClaim, loading }: {
 }
 
 export function RewardsClient({ profile, initialRewards, household }: Props) {
+  const { t } = useTranslation()
   const [rewards, setRewards] = useState<Reward[]>(initialRewards)
   const [showCreate, setShowCreate] = useState(false)
   const [loading, setLoading] = useState<string | null>(null)
@@ -90,7 +93,7 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
     const res = await fetch(`/api/rewards/${rewardId}/claim`, { method: 'POST' })
     const data = await res.json()
     if (!res.ok) { setClaimMsg(data.error); setLoading(null); return }
-    setClaimMsg('🏆 Treasure claimed!')
+    setClaimMsg(t('rewards.claimedSuccess'))
     setLoading(null)
   }
 
@@ -110,14 +113,14 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-quest text-2xl font-bold text-fg">Treasure Room</h1>
+          <h1 className="font-quest text-2xl font-bold text-fg">{t('rewards.title')}</h1>
           <p className="text-fg-muted text-sm">
-            Your riches: <span className="text-gold font-semibold">{profile.personalPoints} personal</span>
-            {' '}· <span className="text-sapphire font-semibold">{household.sharedPoints} shared</span>
+            {t('rewards.yourRiches')} <span className="text-gold font-semibold">{profile.personalPoints} {t('common.personal')}</span>
+            {' '}· <span className="text-sapphire font-semibold">{household.sharedPoints} {t('common.shared')}</span>
           </p>
         </div>
         <Button onClick={() => setShowCreate(true)} size="sm">
-          <Plus size={14} /> New Reward
+          <Plus size={14} /> {t('rewards.newReward')}
         </Button>
       </div>
 
@@ -135,8 +138,8 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             className="text-center py-16 text-fg-muted">
             <div className="text-4xl mb-3">🏆</div>
-            <p className="font-quest text-lg">No treasures yet</p>
-            <p className="text-sm">Create rewards to motivate your party</p>
+            <p className="font-quest text-lg">{t('rewards.noTreasures')}</p>
+            <p className="text-sm">{t('rewards.noTreasuresSubtitle')}</p>
           </motion.div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -147,44 +150,45 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
                 canAfford={canAfford(reward)}
                 onClaim={() => handleClaim(reward.id)}
                 loading={loading === reward.id}
+                t={t}
               />
             ))}
           </div>
         )}
       </AnimatePresence>
 
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="🏆 Create Reward">
+      <Modal open={showCreate} onClose={() => setShowCreate(false)} title={t('rewards.createTitle')}>
         <form onSubmit={handleCreate} className="space-y-3">
           <div className="grid grid-cols-5 gap-2">
-            <Input label="Icon" value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} className="col-span-1 text-center text-xl" />
+            <Input label={t('rewards.iconLabel')} value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} className="col-span-1 text-center text-xl" />
             <div className="col-span-4">
-              <Input label="Reward Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Dinner of my choice..." required />
+              <Input label={t('rewards.rewardTitleLabel')} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('rewards.rewardTitlePlaceholder')} required />
             </div>
           </div>
-          <Input label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Details..." />
+          <Input label={t('rewards.descriptionLabel')} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Details..." />
           <div className="grid grid-cols-2 gap-3">
-            <Select label="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-              <option value="PLEDGE">🎁 Real-world pledge</option>
-              <option value="VIRTUAL">✨ Virtual badge</option>
+            <Select label={t('rewards.typeLabel')} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+              <option value="PLEDGE">{t('rewards.typePledge')}</option>
+              <option value="VIRTUAL">{t('rewards.typeVirtual')}</option>
             </Select>
-            <Select label="Cost From" value={form.costType} onChange={(e) => setForm({ ...form, costType: e.target.value })}>
-              <option value="PERSONAL">Personal points</option>
-              <option value="SHARED">Shared bank</option>
+            <Select label={t('rewards.costFromLabel')} value={form.costType} onChange={(e) => setForm({ ...form, costType: e.target.value })}>
+              <option value="PERSONAL">{t('rewards.costPersonal')}</option>
+              <option value="SHARED">{t('rewards.costShared')}</option>
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Cost (pts)" type="number" min={1} value={form.cost} onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })} />
-            <Select label="Repeatable" value={form.repeatable ? 'yes' : 'no'} onChange={(e) => setForm({ ...form, repeatable: e.target.value === 'yes' })}>
-              <option value="yes">Yes</option>
-              <option value="no">One-time</option>
+            <Input label={t('rewards.costPtsLabel')} type="number" min={1} value={form.cost} onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })} />
+            <Select label={t('rewards.repeatableLabel')} value={form.repeatable ? 'yes' : 'no'} onChange={(e) => setForm({ ...form, repeatable: e.target.value === 'yes' })}>
+              <option value="yes">{t('rewards.repeatableYes')}</option>
+              <option value="no">{t('rewards.repeatableNo')}</option>
             </Select>
           </div>
           {form.repeatable && (
-            <Input label="Cooldown (hours)" type="number" min={1} value={form.cooldownHours} onChange={(e) => setForm({ ...form, cooldownHours: Number(e.target.value) })} />
+            <Input label={t('rewards.cooldownLabel')} type="number" min={1} value={form.cooldownHours} onChange={(e) => setForm({ ...form, cooldownHours: Number(e.target.value) })} />
           )}
           <div className="flex gap-2 pt-2">
-            <Button type="button" variant="ghost" className="flex-1" onClick={() => setShowCreate(false)}>Cancel</Button>
-            <Button type="submit" className="flex-1">Create Reward</Button>
+            <Button type="button" variant="ghost" className="flex-1" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
+            <Button type="submit" className="flex-1">{t('rewards.createRewardBtn')}</Button>
           </div>
         </form>
       </Modal>

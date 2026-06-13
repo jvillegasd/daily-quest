@@ -6,8 +6,10 @@ import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
+import { useTranslation } from '@/lib/i18n/use-translation'
 
 export default function LoginPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,7 +20,7 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     const res = await signIn('credentials', { email, password, redirect: false })
-    if (res?.error) { setError('Invalid email or password'); setLoading(false); return }
+    if (res?.error) { setError(t('auth.invalidCredentials')); setLoading(false); return }
     window.location.href = '/dashboard'
   }
 
@@ -29,7 +31,7 @@ export default function LoginPage() {
 
   return (
     <Card>
-      <h2 className="font-quest text-xl font-bold text-fg mb-6 text-center">Enter the Realm</h2>
+      <h2 className="font-quest text-xl font-bold text-fg mb-6 text-center">{t('auth.enterRealm')}</h2>
 
       <Button variant="outline" className="w-full mb-4" onClick={handleGoogle} loading={loading}>
         <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -38,27 +40,27 @@ export default function LoginPage() {
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
         </svg>
-        Continue with Google
+        {t('auth.continueWithGoogle')}
       </Button>
 
       <div className="flex items-center gap-3 mb-4">
         <div className="h-px flex-1 bg-border" />
-        <span className="text-xs text-fg-subtle">or</span>
+        <span className="text-xs text-fg-subtle">{t('common.or')}</span>
         <div className="h-px flex-1 bg-border" />
       </div>
 
       <form onSubmit={handleEmailLogin} className="space-y-4">
-        <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="hero@realm.com" required />
-        <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+        <Input label={t('auth.emailLabel')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('auth.emailPlaceholder')} required />
+        <Input label={t('auth.passwordLabel')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('auth.passwordPlaceholder')} required />
         {error && <p className="text-sm text-ruby">{error}</p>}
         <Button type="submit" className="w-full" size="lg" loading={loading}>
-          Begin Adventure
+          {t('auth.beginAdventure')}
         </Button>
       </form>
 
       <p className="text-center text-sm text-fg-muted mt-4">
-        No account?{' '}
-        <Link href="/signup" className="text-gold hover:text-gold-bright font-semibold">Create one</Link>
+        {t('auth.noAccount')}{' '}
+        <Link href="/signup" className="text-gold hover:text-gold-bright font-semibold">{t('auth.createOne')}</Link>
       </p>
     </Card>
   )

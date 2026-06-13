@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Check, SkipForward, Filter } from 'lucide-react'
+import { Plus, Check, SkipForward } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,8 +10,10 @@ import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Avatar } from '@/components/layout/avatar'
+import { useTranslation } from '@/lib/i18n/use-translation'
 import type { Profile, Task, Category } from '@/lib/types'
 import { formatDistanceToNow } from 'date-fns'
+import { es as esLocale } from 'date-fns/locale'
 
 interface Props {
   profile: Profile
@@ -41,6 +43,7 @@ function Confetti() {
 }
 
 export function QuestsClient({ profile, initialTasks, categories, members }: Props) {
+  const { locale, t } = useTranslation()
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [filter, setFilter] = useState<'all' | 'mine' | 'open' | 'done'>('all')
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -54,12 +57,12 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
     assignedToId: '', dueAt: '', recurrenceRule: '',
   })
 
-  const filtered = tasks.filter((t) => {
-    if (filter === 'mine') return t.assignedToId === profile.id && t.status === 'PENDING'
-    if (filter === 'open') return !t.assignedToId && t.status === 'PENDING'
-    if (filter === 'done') return t.status === 'DONE'
+  const filtered = tasks.filter((task) => {
+    if (filter === 'mine') return task.assignedToId === profile.id && task.status === 'PENDING'
+    if (filter === 'open') return !task.assignedToId && task.status === 'PENDING'
+    if (filter === 'done') return task.status === 'DONE'
     return true
-  }).filter((t) => !categoryFilter || t.categoryId === categoryFilter)
+  }).filter((task) => !categoryFilter || task.categoryId === categoryFilter)
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -88,7 +91,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
       body: JSON.stringify({ action: 'complete' }),
     })
     const { task } = await res.json()
-    setTasks((prev) => prev.map((t) => t.id === taskId ? task : t))
+    setTasks((prev) => prev.map((item) => item.id === taskId ? task : item))
     setCelebrating(true)
     setTimeout(() => setCelebrating(false), 2000)
     setLoading(null)
@@ -106,17 +109,26 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
     setLoading(null)
   }
 
+  const dateLocale = locale === 'es' ? esLocale : undefined
+
+  const filterLabels: Record<typeof filter, string> = {
+    all: t('quests.filterAll'),
+    mine: t('quests.filterMine'),
+    open: t('quests.filterOpen'),
+    done: t('quests.filterDone'),
+  }
+
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       {celebrating && <Confetti />}
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-quest text-2xl font-bold text-fg">Quest Log</h1>
-          <p className="text-fg-muted text-sm">{tasks.filter((t) => t.status === 'PENDING').length} quests await</p>
+          <h1 className="font-quest text-2xl font-bold text-fg">{t('quests.title')}</h1>
+          <p className="text-fg-muted text-sm">{t('quests.questsAwait', { count: tasks.filter((task) => task.status === 'PENDING').length })}</p>
         </div>
         <Button onClick={() => setShowCreate(true)} size="sm">
-          <Plus size={14} /> New Quest
+          <Plus size={14} /> {t('quests.newQuest')}
         </Button>
       </div>
 
@@ -126,11 +138,11 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all capitalize border ${
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all border ${
               filter === f ? 'bg-gold/20 text-gold border-gold/40' : 'border-border text-fg-muted hover:text-fg'
             }`}
           >
-            {f === 'all' ? 'All Quests' : f === 'mine' ? 'My Quests' : f === 'open' ? 'Open' : 'Completed'}
+            {filterLabels[f]}
           </button>
         ))}
         <select
@@ -138,7 +150,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="px-3 py-1 rounded-full text-xs font-semibold border border-border bg-bg-elevated text-fg-muted focus:outline-none focus:border-gold"
         >
-          <option value="">All Categories</option>
+          <option value="">{t('quests.allCategories')}</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
           ))}
@@ -151,8 +163,8 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="text-center py-16 text-fg-muted">
             <div className="text-4xl mb-3">📜</div>
-            <p className="font-quest text-lg">No quests found</p>
-            <p className="text-sm">Create a new quest to begin your adventure</p>
+            <p className="font-quest text-lg">{t('quests.noQuestsFound')}</p>
+            <p className="text-sm">{t('quests.noQuestsSubtitle')}</p>
           </motion.div>
         )}
         {filtered.map((task) => {
@@ -184,18 +196,18 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
                       <p className={`font-semibold text-fg ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
                         {task.title}
                       </p>
-                      {task.type === 'RECURRING' && <Badge variant="sapphire">↺ Recurring</Badge>}
-                      {isOverdue && <Badge variant="ruby">⚠️ Overdue</Badge>}
+                      {task.type === 'RECURRING' && <Badge variant="sapphire">{t('quests.recurring')}</Badge>}
+                      {isOverdue && <Badge variant="ruby">{t('quests.overdue')}</Badge>}
                     </div>
 
                     {task.description && <p className="text-xs text-fg-muted mt-0.5">{task.description}</p>}
 
                     <div className="flex items-center gap-3 mt-2 flex-wrap">
-                      <Badge variant="gold">+{task.points} {task.pointsType === 'PERSONAL' ? 'personal' : 'shared'}</Badge>
+                      <Badge variant="gold">+{task.points} {task.pointsType === 'PERSONAL' ? t('common.personal') : t('common.shared')}</Badge>
                       {cat && <Badge variant="muted">{cat.name}</Badge>}
                       {task.dueAt && (
                         <span className={`text-xs ${isOverdue ? 'text-ruby' : 'text-fg-subtle'}`}>
-                          Due {formatDistanceToNow(new Date(task.dueAt), { addSuffix: true })}
+                          Due {formatDistanceToNow(new Date(task.dueAt), { addSuffix: true, locale: dateLocale })}
                         </span>
                       )}
                       {assignee ? (
@@ -204,7 +216,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
                           <span className="text-xs text-fg-muted">{assignee.displayName}</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-emerald font-semibold">Open quest</span>
+                        <span className="text-xs text-emerald font-semibold">{t('quests.openQuest')}</span>
                       )}
                     </div>
                   </div>
@@ -231,7 +243,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
                   )}
 
                   {task.status === 'DONE' && (
-                    <Badge variant="emerald">✓ Done</Badge>
+                    <Badge variant="emerald">{t('quests.done')}</Badge>
                   )}
                 </div>
               </Card>
@@ -241,43 +253,43 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
       </AnimatePresence>
 
       {/* Create Quest Modal */}
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="📜 Create New Quest">
+      <Modal open={showCreate} onClose={() => setShowCreate(false)} title={t('quests.createTitle')}>
         <form onSubmit={handleCreate} className="space-y-3">
-          <Input label="Quest Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Wash the dishes..." required />
-          <Input label="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Details about this quest" />
+          <Input label={t('quests.questTitleLabel')} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('quests.questTitlePlaceholder')} required />
+          <Input label={t('quests.descriptionLabel')} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={t('quests.descriptionPlaceholder')} />
 
           <div className="grid grid-cols-2 gap-3">
-            <Select label="Category" value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
+            <Select label={t('quests.categoryLabel')} value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
             </Select>
-            <Select label="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-              <option value="ONE_OFF">One-off</option>
-              <option value="RECURRING">Recurring</option>
+            <Select label={t('quests.typeLabel')} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+              <option value="ONE_OFF">{t('quests.typeOneOff')}</option>
+              <option value="RECURRING">{t('quests.typeRecurring')}</option>
             </Select>
           </div>
 
           {form.type === 'RECURRING' && (
-            <Input label="Recurrence (cron)" value={form.recurrenceRule} onChange={(e) => setForm({ ...form, recurrenceRule: e.target.value })} placeholder="0 9 * * 1 (every Monday 9am)" />
+            <Input label={t('quests.recurrenceLabel')} value={form.recurrenceRule} onChange={(e) => setForm({ ...form, recurrenceRule: e.target.value })} placeholder={t('quests.recurrencePlaceholder')} />
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Points" type="number" min={1} value={form.points} onChange={(e) => setForm({ ...form, points: Number(e.target.value) })} />
-            <Select label="Points Type" value={form.pointsType} onChange={(e) => setForm({ ...form, pointsType: e.target.value })}>
-              <option value="PERSONAL">Personal</option>
-              <option value="SHARED">Shared Bank</option>
+            <Input label={t('quests.pointsLabel')} type="number" min={1} value={form.points} onChange={(e) => setForm({ ...form, points: Number(e.target.value) })} />
+            <Select label={t('quests.pointsTypeLabel')} value={form.pointsType} onChange={(e) => setForm({ ...form, pointsType: e.target.value })}>
+              <option value="PERSONAL">{t('quests.pointsTypePersonal')}</option>
+              <option value="SHARED">{t('quests.pointsTypeShared')}</option>
             </Select>
           </div>
 
-          <Select label="Assign To" value={form.assignedToId} onChange={(e) => setForm({ ...form, assignedToId: e.target.value })}>
-            <option value="">Open (anyone)</option>
+          <Select label={t('quests.assignToLabel')} value={form.assignedToId} onChange={(e) => setForm({ ...form, assignedToId: e.target.value })}>
+            <option value="">{t('quests.assignToOpen')}</option>
             {members.map((m) => <option key={m.id} value={m.id}>{m.displayName}</option>)}
           </Select>
 
-          <Input label="Due Date (optional)" type="datetime-local" value={form.dueAt} onChange={(e) => setForm({ ...form, dueAt: e.target.value })} />
+          <Input label={t('quests.dueDateLabel')} type="datetime-local" value={form.dueAt} onChange={(e) => setForm({ ...form, dueAt: e.target.value })} />
 
           <div className="flex gap-2 pt-2">
-            <Button type="button" variant="ghost" className="flex-1" onClick={() => setShowCreate(false)}>Cancel</Button>
-            <Button type="submit" className="flex-1">Create Quest</Button>
+            <Button type="button" variant="ghost" className="flex-1" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
+            <Button type="submit" className="flex-1">{t('quests.createQuestBtn')}</Button>
           </div>
         </form>
       </Modal>

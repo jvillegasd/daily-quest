@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, LevelBadge } from '@/components/layout/avatar'
 import { getPointsForLevel, getLevelFromPoints } from '@/lib/types'
+import { useTranslation } from '@/lib/i18n/use-translation'
 import type { Profile, Task, Reward, Household } from '@/lib/types'
 
 interface Props {
@@ -23,9 +24,10 @@ const item: Variants = {
 }
 
 export function DashboardClient({ profile, tasks, rewards, members, household }: Props) {
-  const pending = tasks.filter((t) => t.status === 'PENDING')
-  const done = tasks.filter((t) => t.status === 'DONE')
-  const myTasks = pending.filter((t) => t.assignedToId === profile.id || !t.assignedToId)
+  const { t } = useTranslation()
+  const pending = tasks.filter((task) => task.status === 'PENDING')
+  const done = tasks.filter((task) => task.status === 'DONE')
+  const myTasks = pending.filter((task) => task.assignedToId === profile.id || !task.assignedToId)
 
   const nextLevelPoints = getPointsForLevel(profile.level + 1)
   const currentLevelPoints = getPointsForLevel(profile.level)
@@ -40,18 +42,18 @@ export function DashboardClient({ profile, tasks, rewards, members, household }:
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <h1 className="font-quest text-2xl md:text-3xl font-bold text-fg">
-          Kingdom of <span className="text-gold">{household.name}</span>
+          {t('dashboard.kingdomOf')} <span className="text-gold">{household.name}</span>
         </h1>
-        <p className="text-fg-muted text-sm mt-1">Welcome back, {profile.displayName} ⚔️</p>
+        <p className="text-fg-muted text-sm mt-1">{t('dashboard.welcomeBack', { name: profile.displayName })}</p>
       </motion.div>
 
       <motion.div variants={container} initial="hidden" animate="show" className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Stat cards */}
         {[
-          { icon: Sword, label: 'Active Quests', value: myTasks.length, variant: 'amber' as const, color: 'var(--amber)' },
-          { icon: Shield, label: 'Completed', value: done.length, variant: 'emerald' as const, color: 'var(--emerald)' },
-          { icon: Trophy, label: 'Your Points', value: profile.personalPoints, variant: 'gold' as const, color: 'var(--gold)' },
-          { icon: Clock, label: 'Shared Bank', value: household.sharedPoints, variant: 'sapphire' as const, color: 'var(--sapphire)' },
+          { icon: Sword, label: t('dashboard.activeQuests'), value: myTasks.length, variant: 'amber' as const, color: 'var(--amber)' },
+          { icon: Shield, label: t('dashboard.completed'), value: done.length, variant: 'emerald' as const, color: 'var(--emerald)' },
+          { icon: Trophy, label: t('dashboard.yourPoints'), value: profile.personalPoints, variant: 'gold' as const, color: 'var(--gold)' },
+          { icon: Clock, label: t('dashboard.sharedBank'), value: household.sharedPoints, variant: 'sapphire' as const, color: 'var(--sapphire)' },
         ].map(({ icon: Icon, label, value, color }) => (
           <motion.div key={label} variants={item}>
             <Card className="flex items-center gap-4 p-5">
@@ -72,7 +74,7 @@ export function DashboardClient({ profile, tasks, rewards, members, household }:
         <motion.div variants={item} initial="hidden" animate="show">
           <Card>
             <CardHeader>
-              <CardTitle>Your Character</CardTitle>
+              <CardTitle>{t('dashboard.yourCharacter')}</CardTitle>
               <LevelBadge level={profile.level} />
             </CardHeader>
             <div className="flex items-center gap-4 mb-3">
@@ -85,7 +87,7 @@ export function DashboardClient({ profile, tasks, rewards, members, household }:
               />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-fg mb-1">{profile.displayName}</p>
-                <p className="text-xs text-fg-muted mb-2">{profile.personalPoints} / {nextLevelPoints} XP</p>
+                <p className="text-xs text-fg-muted mb-2">{t('dashboard.xpFormat', { current: profile.personalPoints, max: nextLevelPoints })}</p>
                 <div className="xp-bar">
                   <motion.div
                     className="xp-bar-fill"
@@ -103,7 +105,7 @@ export function DashboardClient({ profile, tasks, rewards, members, household }:
         <motion.div variants={item} initial="hidden" animate="show">
           <Card>
             <CardHeader>
-              <CardTitle>Party Members</CardTitle>
+              <CardTitle>{t('dashboard.partyMembers')}</CardTitle>
               <Badge variant="gold">🏰 {household.name}</Badge>
             </CardHeader>
             <div className="space-y-3">
@@ -124,7 +126,7 @@ export function DashboardClient({ profile, tasks, rewards, members, household }:
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-semibold text-fg truncate">{member.displayName}</p>
-                        <span className="text-xs text-gold font-quest">{member.personalPoints} pts</span>
+                        <span className="text-xs text-gold font-quest">{member.personalPoints} {t('common.pts')}</span>
                       </div>
                       <div className="xp-bar mt-1">
                         <div className="xp-bar-fill" style={{ width: `${Math.min(pct, 100)}%` }} />
@@ -141,11 +143,11 @@ export function DashboardClient({ profile, tasks, rewards, members, household }:
         <motion.div variants={item} initial="hidden" animate="show" className="md:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>My Active Quests</CardTitle>
-              <Badge variant="amber">{myTasks.length} pending</Badge>
+              <CardTitle>{t('dashboard.myActiveQuests')}</CardTitle>
+              <Badge variant="amber">{t('dashboard.pending', { count: myTasks.length })}</Badge>
             </CardHeader>
             {myTasks.length === 0 ? (
-              <p className="text-fg-muted text-sm text-center py-6">🎉 All quests complete! Rest, hero.</p>
+              <p className="text-fg-muted text-sm text-center py-6">{t('dashboard.allQuestsComplete')}</p>
             ) : (
               <div className="space-y-2">
                 {myTasks.slice(0, 5).map((task) => (
