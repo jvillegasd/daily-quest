@@ -29,7 +29,6 @@ export function HouseholdClient({ profile, household, members, categories: initi
   const [addingCat, setAddingCat] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: '', icon: '', color: '', defaultPoints: 10 })
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
@@ -74,18 +73,9 @@ export function HouseholdClient({ profile, household, members, categories: initi
     setEditingId(null)
   }
 
-  function requestDelete(cat: Category) {
-    if ((cat.taskCount ?? 0) > 0) {
-      setConfirmDeleteId(cat.id)
-    } else {
-      handleDeleteCategory(cat.id)
-    }
-  }
-
   async function handleDeleteCategory(id: string) {
     await fetch(`/api/categories/${id}`, { method: 'DELETE' })
     setCategories((prev) => prev.filter((c) => c.id !== id))
-    setConfirmDeleteId(null)
   }
 
   return (
@@ -227,34 +217,23 @@ export function HouseholdClient({ profile, household, members, categories: initi
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-fg">{cat.name}</p>
-                        <p className="text-xs text-fg-muted">
-                          {t('household.defaultPts', { count: cat.defaultPoints })}
-                          {(cat.taskCount ?? 0) > 0 && (
-                            <span className="ml-2 text-amber-500">{t('household.categoryTaskCount', { count: cat.taskCount! })}</span>
-                          )}
-                        </p>
+                        <p className="text-xs text-fg-muted">{t('household.defaultPts', { count: cat.defaultPoints })}</p>
+                        {(cat.taskCount ?? 0) > 0 && (
+                          <p className="text-xs text-ruby mt-0.5">{t('household.categoryTaskCount', { count: cat.taskCount! })}</p>
+                        )}
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => startEdit(cat)}>
                         <Pencil size={12} />
                       </Button>
-                      <Button variant="danger" size="sm" onClick={() => requestDelete(cat)}>
+                      <Button
+                        variant="danger" size="sm"
+                        disabled={(cat.taskCount ?? 0) > 0}
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        title={(cat.taskCount ?? 0) > 0 ? t('household.categoryTaskCount', { count: cat.taskCount! }) : undefined}
+                      >
                         <Trash2 size={12} />
                       </Button>
                     </div>
-                    <AnimatePresence>
-                      {confirmDeleteId === cat.id && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                          className="px-3 pb-3 flex items-center justify-between gap-3"
-                        >
-                          <p className="text-xs text-ruby font-semibold">{t('household.categoryDeleteWarning', { count: cat.taskCount! })}</p>
-                          <div className="flex gap-2 shrink-0">
-                            <Button size="sm" variant="ghost" onClick={() => setConfirmDeleteId(null)}>{t('household.categoryDeleteCancel')}</Button>
-                            <Button size="sm" variant="danger" onClick={() => handleDeleteCategory(cat.id)}>{t('household.categoryDeleteConfirm')}</Button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
                   </motion.div>
                 )}
               </AnimatePresence>

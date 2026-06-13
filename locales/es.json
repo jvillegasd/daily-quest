@@ -146,10 +146,7 @@
     "categoryNamePlaceholder": "Nombre de categoría",
     "categoryColorLabel": "Color",
     "categoryDefaultPtsLabel": "Puntos por defecto",
-    "categoryTaskCount": "{{count}} tarea(s)",
-    "categoryDeleteWarning": "Esta categoría tiene {{count}} tarea(s). ¿Eliminar de todas formas?",
-    "categoryDeleteConfirm": "Eliminar",
-    "categoryDeleteCancel": "Conservar"
+    "categoryTaskCount": "{{count}} tarea(s) asignada(s) — desasigna antes de eliminar"
   },
   "settings": {
     "title": "⚙️ Ajustes",
