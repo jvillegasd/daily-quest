@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -56,7 +57,8 @@ export default function LoginPage() {
       </form>
 
       <p className="text-center text-sm text-fg-muted mt-4">
-        Need access? Ask for an invite.
+        No account?{' '}
+        <Link href="/signup" className="text-gold hover:text-gold-bright font-semibold">Create one</Link>
       </p>
     </Card>
   )
