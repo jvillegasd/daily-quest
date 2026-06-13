@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, Trash2, Send } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Trash2, Send, Pencil } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +27,8 @@ export function HouseholdClient({ profile, household, members, categories: initi
   const [inviteMsg, setInviteMsg] = useState('')
   const [newCat, setNewCat] = useState({ name: '', icon: '📌', color: '#c9a84c', defaultPoints: 10 })
   const [addingCat, setAddingCat] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', icon: '', color: '', defaultPoints: 10 })
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
@@ -52,6 +54,23 @@ export function HouseholdClient({ profile, household, members, categories: initi
     setCategories((prev) => [...prev, category])
     setNewCat({ name: '', icon: '📌', color: '#c9a84c', defaultPoints: 10 })
     setAddingCat(false)
+  }
+
+  function startEdit(cat: Category) {
+    setEditingId(cat.id)
+    setEditForm({ name: cat.name, icon: cat.icon, color: cat.color, defaultPoints: cat.defaultPoints })
+  }
+
+  async function handleSaveEdit(e: React.FormEvent, id: string) {
+    e.preventDefault()
+    const res = await fetch(`/api/categories/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...editForm, defaultPoints: Number(editForm.defaultPoints) }),
+    })
+    const { category } = await res.json()
+    setCategories((prev) => prev.map((c) => c.id === id ? category : c))
+    setEditingId(null)
   }
 
   async function handleDeleteCategory(id: string) {
@@ -159,21 +178,55 @@ export function HouseholdClient({ profile, household, members, categories: initi
 
         <div className="space-y-2">
           {categories.map((cat) => (
-            <div key={cat.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-bg-elevated border border-border">
-              <div className="h-8 w-8 rounded-lg flex items-center justify-center text-lg" style={{ background: `${cat.color}25` }}>
-                {cat.icon}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-fg">{cat.name}</p>
-                <p className="text-xs text-fg-muted">{t('household.defaultPts', { count: cat.defaultPoints })}</p>
-              </div>
-              {cat.isDefault ? (
-                <Badge variant="muted">{t('common.default')}</Badge>
-              ) : (
-                <Button variant="danger" size="sm" onClick={() => handleDeleteCategory(cat.id)}>
-                  <Trash2 size={12} />
-                </Button>
-              )}
+            <div key={cat.id}>
+              <AnimatePresence mode="wait">
+                {editingId === cat.id ? (
+                  <motion.form
+                    key="edit"
+                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                    onSubmit={(e) => handleSaveEdit(e, cat.id)}
+                    className="p-3 rounded-lg bg-bg-elevated border border-gold/40 space-y-3"
+                  >
+                    <div className="grid grid-cols-4 gap-2">
+                      <EmojiPicker label={t('household.categoryIconLabel')} value={editForm.icon} onChange={(emoji) => setEditForm({ ...editForm, icon: emoji })} />
+                      <div className="col-span-3">
+                        <Input label={t('household.categoryNameLabel')} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-semibold text-fg-muted">{t('household.categoryColorLabel')}</label>
+                        <input type="color" value={editForm.color} onChange={(e) => setEditForm({ ...editForm, color: e.target.value })} className="h-9 w-full rounded-lg border border-border cursor-pointer" />
+                      </div>
+                      <Input label={t('household.categoryDefaultPtsLabel')} type="number" min={1} value={editForm.defaultPoints} onChange={(e) => setEditForm({ ...editForm, defaultPoints: Number(e.target.value) })} />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="ghost" size="sm" className="flex-1" onClick={() => setEditingId(null)}>{t('common.cancel')}</Button>
+                      <Button type="submit" size="sm" className="flex-1">{t('common.save')}</Button>
+                    </div>
+                  </motion.form>
+                ) : (
+                  <motion.div
+                    key="row"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="flex items-center gap-3 p-2.5 rounded-lg bg-bg-elevated border border-border"
+                  >
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center text-lg shrink-0" style={{ background: `${cat.color}25` }}>
+                      {cat.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-fg">{cat.name}</p>
+                      <p className="text-xs text-fg-muted">{t('household.defaultPts', { count: cat.defaultPoints })}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => startEdit(cat)}>
+                      <Pencil size={12} />
+                    </Button>
+                    <Button variant="danger" size="sm" onClick={() => handleDeleteCategory(cat.id)}>
+                      <Trash2 size={12} />
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ))}
         </div>
