@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, LevelBadge } from '@/components/layout/avatar'
 import { useTranslation } from '@/lib/i18n/use-translation'
 import { EmojiPicker } from '@/components/ui/emoji-picker'
+import { hexToRgba } from '@/lib/utils/color'
 import type { Profile, Household, Category } from '@/lib/types'
 
 interface Props {
@@ -214,7 +215,7 @@ export function HouseholdClient({ profile, household, members, categories: initi
                     className="rounded-lg bg-bg-elevated border border-border overflow-hidden"
                   >
                     <div className="flex items-center gap-3 p-2.5">
-                      <div className="h-8 w-8 rounded-lg flex items-center justify-center text-lg shrink-0" style={{ background: `${cat.color}25` }}>
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center text-lg shrink-0" style={{ background: hexToRgba(cat.color, 0.18) }}>
                         {cat.icon}
                       </div>
                       <div className="flex-1 min-w-0">

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Avatar } from '@/components/layout/avatar'
 import { useTranslation } from '@/lib/i18n/use-translation'
+import { hexToRgba } from '@/lib/utils/color'
 import type { Profile, Task, Category } from '@/lib/types'
 import { formatDistanceToNow } from 'date-fns'
 import { es as esLocale } from 'date-fns/locale'
@@ -186,7 +187,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
                 <div className="flex items-start gap-3">
                   <div
                     className="h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-                    style={{ background: `${cat?.color ?? '#c9a84c'}20` }}
+                    style={{ background: hexToRgba(cat?.color ?? '#c9a84c', 0.18) }}
                   >
                     {cat?.icon ?? '📜'}
                   </div>
