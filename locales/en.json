@@ -145,7 +145,11 @@
     "categoryNameLabel": "Name",
     "categoryNamePlaceholder": "Category name",
     "categoryColorLabel": "Color",
-    "categoryDefaultPtsLabel": "Default Points"
+    "categoryDefaultPtsLabel": "Default Points",
+    "categoryTaskCount": "{{count}} task(s)",
+    "categoryDeleteWarning": "This category has {{count}} task(s). Delete anyway?",
+    "categoryDeleteConfirm": "Delete",
+    "categoryDeleteCancel": "Keep"
   },
   "settings": {
     "title": "⚙️ Settings",

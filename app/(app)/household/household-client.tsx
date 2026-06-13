@@ -29,6 +29,7 @@ export function HouseholdClient({ profile, household, members, categories: initi
   const [addingCat, setAddingCat] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: '', icon: '', color: '', defaultPoints: 10 })
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
@@ -73,9 +74,18 @@ export function HouseholdClient({ profile, household, members, categories: initi
     setEditingId(null)
   }
 
+  function requestDelete(cat: Category) {
+    if ((cat.taskCount ?? 0) > 0) {
+      setConfirmDeleteId(cat.id)
+    } else {
+      handleDeleteCategory(cat.id)
+    }
+  }
+
   async function handleDeleteCategory(id: string) {
     await fetch(`/api/categories/${id}`, { method: 'DELETE' })
     setCategories((prev) => prev.filter((c) => c.id !== id))
+    setConfirmDeleteId(null)
   }
 
   return (
@@ -209,21 +219,42 @@ export function HouseholdClient({ profile, household, members, categories: initi
                   <motion.div
                     key="row"
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="flex items-center gap-3 p-2.5 rounded-lg bg-bg-elevated border border-border"
+                    className="rounded-lg bg-bg-elevated border border-border overflow-hidden"
                   >
-                    <div className="h-8 w-8 rounded-lg flex items-center justify-center text-lg shrink-0" style={{ background: `${cat.color}25` }}>
-                      {cat.icon}
+                    <div className="flex items-center gap-3 p-2.5">
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center text-lg shrink-0" style={{ background: `${cat.color}25` }}>
+                        {cat.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-fg">{cat.name}</p>
+                        <p className="text-xs text-fg-muted">
+                          {t('household.defaultPts', { count: cat.defaultPoints })}
+                          {(cat.taskCount ?? 0) > 0 && (
+                            <span className="ml-2 text-amber-500">{t('household.categoryTaskCount', { count: cat.taskCount! })}</span>
+                          )}
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => startEdit(cat)}>
+                        <Pencil size={12} />
+                      </Button>
+                      <Button variant="danger" size="sm" onClick={() => requestDelete(cat)}>
+                        <Trash2 size={12} />
+                      </Button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-fg">{cat.name}</p>
-                      <p className="text-xs text-fg-muted">{t('household.defaultPts', { count: cat.defaultPoints })}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => startEdit(cat)}>
-                      <Pencil size={12} />
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => handleDeleteCategory(cat.id)}>
-                      <Trash2 size={12} />
-                    </Button>
+                    <AnimatePresence>
+                      {confirmDeleteId === cat.id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                          className="px-3 pb-3 flex items-center justify-between gap-3"
+                        >
+                          <p className="text-xs text-ruby font-semibold">{t('household.categoryDeleteWarning', { count: cat.taskCount! })}</p>
+                          <div className="flex gap-2 shrink-0">
+                            <Button size="sm" variant="ghost" onClick={() => setConfirmDeleteId(null)}>{t('household.categoryDeleteCancel')}</Button>
+                            <Button size="sm" variant="danger" onClick={() => handleDeleteCategory(cat.id)}>{t('household.categoryDeleteConfirm')}</Button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -73,7 +73,11 @@ export const db: Database = {
 
   categories: {
     async findByHousehold(householdId) {
-      return prisma.category.findMany({ where: { householdId } })
+      const rows = await prisma.category.findMany({
+        where: { householdId },
+        include: { _count: { select: { tasks: true } } },
+      })
+      return rows.map(({ _count, ...cat }) => ({ ...cat, taskCount: _count.tasks }))
     },
     async create(data) {
       return prisma.category.create({ data })

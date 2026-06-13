@@ -40,6 +40,7 @@ export interface Category {
   color: string
   defaultPoints: number
   isDefault: boolean
+  taskCount?: number
 }
 
 export interface Task {
