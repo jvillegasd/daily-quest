@@ -183,6 +183,9 @@
     "legendaryHero": "Héroe Legendario"
   },
   "notifications": {
+    "title": "Notificaciones",
+    "empty": "Aún no hay notificaciones",
+    "markAllRead": "Marcar todas leídas",
     "TASK_PENDING": "⏰ Recordatorios de tareas",
     "TASK_COMPLETED_BY_PARTNER": "⚔️ Compañero completa una misión",
     "REWARD_CLAIMED": "🏆 Recompensa reclamada",

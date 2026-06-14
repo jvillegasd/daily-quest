@@ -8,3 +8,6 @@ export const NOTIFICATION_KEY = {
 
 export const NOTIFICATION_ICON = '/icons/icon-192.png'
 export const DEFAULT_REMINDER_HOURS = 1
+
+// How many notifications the bell dropdown fetches per request.
+export const NOTIFICATION_FEED_LIMIT = 30

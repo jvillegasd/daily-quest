@@ -3,5 +3,7 @@ export const ROUTES = {
   SIGNUP: '/signup',
   SIGNUP_HOUSEHOLD: '/signup?step=household',
   DASHBOARD: '/dashboard',
+  QUESTS: '/quests',
+  REWARDS: '/rewards',
   INVITE: '/invite',
 }

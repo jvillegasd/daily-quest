@@ -24,7 +24,7 @@ const LIMITS = {
   PASSWORD_MAX: 128,
   POINTS_MAX: 1_000_000,
   COOLDOWN_HOURS_MAX: 8760,
-  PUSH_KEY_MAX: 512,
+  IDS_MAX: 200,
 } as const
 
 // IDs are Prisma cuid()s; ownership is enforced separately via authorize(), so
@@ -139,12 +139,10 @@ export const CategoryPatchSchema = z.object({
 
 // ---- Notifications ----
 
-export const PushSubscribeSchema = z.object({
-  endpoint: z.url().max(LIMITS.URL_MAX),
-  keys: z.object({
-    p256dh: z.string().min(1).max(LIMITS.PUSH_KEY_MAX),
-    auth: z.string().min(1).max(LIMITS.PUSH_KEY_MAX),
-  }),
+// Mark in-app notifications read. Omitting `ids` marks all of the caller's
+// unread notifications as read.
+export const NotificationReadSchema = z.object({
+  ids: z.array(id).max(LIMITS.IDS_MAX).optional(),
 })
 
 /**

@@ -200,40 +200,28 @@ export const db: Database = {
         update: data,
       })
     },
-    async savePushSubscription(profileId, endpoint, keys) {
-      await prisma.pushSubscription.upsert({
-        where: { endpoint },
-        create: { profileId, endpoint, keysJson: JSON.stringify(keys) },
-        update: { keysJson: JSON.stringify(keys) },
+    async create(data) {
+      return prisma.notification.create({ data })
+    },
+    async createMany(items) {
+      if (items.length === 0) return
+      await prisma.notification.createMany({ data: items })
+    },
+    async list(profileId, limit) {
+      return prisma.notification.findMany({
+        where: { profileId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
       })
     },
-    async deletePushSubscription(endpoint) {
-      await prisma.pushSubscription.deleteMany({ where: { endpoint } })
+    async countUnread(profileId) {
+      return prisma.notification.count({ where: { profileId, readAt: null } })
     },
-    async getPushSubscriptions(profileId) {
-      const profile = await prisma.profile.findUnique({
-        where: { id: profileId },
-        select: { locale: true, pushSubscriptions: true },
+    async markRead(profileId, ids) {
+      await prisma.notification.updateMany({
+        where: { profileId, readAt: null, ...(ids && ids.length ? { id: { in: ids } } : {}) },
+        data: { readAt: new Date() },
       })
-      if (!profile) return []
-      return profile.pushSubscriptions.map((s: { endpoint: string; keysJson: string }) => ({
-        ...s,
-        locale: profile.locale,
-      }))
-    },
-    async getHouseholdPushSubscriptions(householdId) {
-      const profiles = await prisma.profile.findMany({
-        where: { householdId },
-        select: { id: true, locale: true, pushSubscriptions: true },
-      })
-      return profiles.flatMap((p: { id: string; locale: string; pushSubscriptions: { endpoint: string; keysJson: string }[] }) =>
-        p.pushSubscriptions.map((s) => ({
-          endpoint: s.endpoint,
-          keysJson: s.keysJson,
-          profileId: p.id,
-          locale: p.locale,
-        }))
-      )
     },
   },
 }

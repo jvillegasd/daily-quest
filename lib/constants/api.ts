@@ -6,7 +6,8 @@ export const API = {
   CATEGORIES: '/api/categories',
   CATEGORY: (id: string) => `/api/categories/${id}`,
   INVITE: '/api/invite',
-  NOTIFICATIONS_SUBSCRIBE: '/api/notifications/subscribe',
+  NOTIFICATIONS: '/api/notifications',
+  NOTIFICATIONS_READ: '/api/notifications/read',
   NOTIFICATIONS_PREFERENCES: '/api/notifications/preferences',
   PROFILE: '/api/profile',
 }

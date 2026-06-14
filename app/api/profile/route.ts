@@ -60,7 +60,7 @@ export async function DELETE() {
     await tx.reward.deleteMany({ where: { createdById: profile.id } })
 
     // Delete the user — cascades Profile, Account, Session,
-    // NotificationPreference, PushSubscription
+    // NotificationPreference, Notification
     await tx.user.delete({ where: { id: profile.userId } })
   })
 

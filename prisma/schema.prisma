@@ -98,7 +98,7 @@ model Profile {
   createdRewards  Reward[]
   rewardClaims    RewardClaim[]
   notificationPreferences NotificationPreference[]
-  pushSubscriptions       PushSubscription[]
+  notifications           Notification[]
 }
 
 model Category {
@@ -185,14 +185,21 @@ model NotificationPreference {
   @@unique([profileId, eventType])
 }
 
-model PushSubscription {
-  id        String   @id @default(cuid())
+// In-app notification inbox: one row per delivered notification, shown in the
+// bell dropdown. `type` reuses NotificationEvent; `readAt` null = unread.
+model Notification {
+  id        String            @id @default(cuid())
   profileId String
-  endpoint  String   @unique
-  keysJson  String
-  createdAt DateTime @default(now())
+  type      NotificationEvent
+  title     String
+  body      String
+  linkUrl   String?
+  readAt    DateTime?
+  createdAt DateTime          @default(now())
 
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, createdAt])
 }
 
 enum Role {

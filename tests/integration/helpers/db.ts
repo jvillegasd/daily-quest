@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db/prisma'
 export function useTestDb() {
   beforeEach(async () => {
     await prisma.$executeRaw`TRUNCATE TABLE
-      "PushSubscription", "NotificationPreference", "RewardClaim",
+      "Notification", "NotificationPreference", "RewardClaim",
       "Reward", "Task", "Category", "Profile",
       "Session", "VerificationToken", "Account", "User", "Household"
       CASCADE`

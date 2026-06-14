@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, Bell, LogOut, Trash2 } from 'lucide-react'
+import { Sun, Moon, LogOut, Trash2 } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, LevelBadge } from '@/components/layout/avatar'
-import { Badge } from '@/components/ui/badge'
 import { signOut } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n/use-translation'
 import { SUPPORTED_LOCALES } from '@/lib/i18n/locale-context'
@@ -29,7 +28,6 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
   const { theme, setTheme } = useTheme()
   const { locale, setLocale, t } = useTranslation()
   const [mounted, setMounted] = useState(false)
-  const [pushEnabled, setPushEnabled] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [prefs, setPrefs] = useState<Record<string, boolean>>(() => {
@@ -40,26 +38,10 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
     return map
   })
   useEffect(() => {
+    // Hydration guard: defer theme/language cards to the client to avoid SSR mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
-    if ('Notification' in window) setPushEnabled(Notification.permission === 'granted')
   }, [])
-
-  async function enablePush() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
-    const permission = await Notification.requestPermission()
-    if (permission !== 'granted') return
-    const reg = await navigator.serviceWorker.ready
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-    })
-    await fetch(API.NOTIFICATIONS_SUBSCRIBE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: sub.endpoint, keys: sub.toJSON().keys }),
-    })
-    setPushEnabled(true)
-  }
 
   async function togglePref(event: NotificationEvent) {
     const enabled = !prefs[event]
@@ -178,17 +160,10 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
         </Card>
       )}
 
-      {/* Push notifications */}
+      {/* Notification preferences */}
       <Card>
         <CardHeader>
           <CardTitle>{t('settings.notificationsTitle')}</CardTitle>
-          {pushEnabled ? (
-            <Badge variant="emerald">{t('settings.pushEnabled')}</Badge>
-          ) : (
-            <Button size="sm" variant="sapphire" onClick={enablePush}>
-              <Bell size={14} /> {t('settings.enablePush')}
-            </Button>
-          )}
         </CardHeader>
         <div className="space-y-2">
           {ALL_EVENTS.map((event) => (

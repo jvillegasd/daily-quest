@@ -6,6 +6,8 @@ import type {
   Reward,
   RewardClaim,
   NotificationPreference,
+  Notification,
+  CreateNotificationInput,
   CreateTaskInput,
   CreateRewardInput,
 } from '@/lib/types'
@@ -65,12 +67,15 @@ export interface RewardRepository {
 }
 
 export interface NotificationRepository {
+  // Per-event preferences (Settings toggles)
   findByProfile(profileId: string): Promise<NotificationPreference[]>
   upsert(data: Omit<NotificationPreference, 'id'>): Promise<NotificationPreference>
-  savePushSubscription(profileId: string, endpoint: string, keys: object): Promise<void>
-  deletePushSubscription(endpoint: string): Promise<void>
-  getPushSubscriptions(profileId: string): Promise<{ endpoint: string; keysJson: string; locale: string }[]>
-  getHouseholdPushSubscriptions(householdId: string): Promise<{ endpoint: string; keysJson: string; profileId: string; locale: string }[]>
+  // In-app notification inbox
+  create(data: CreateNotificationInput): Promise<Notification>
+  createMany(items: CreateNotificationInput[]): Promise<void>
+  list(profileId: string, limit: number): Promise<Notification[]>
+  countUnread(profileId: string): Promise<number>
+  markRead(profileId: string, ids?: string[]): Promise<void>
 }
 
 export interface Database {

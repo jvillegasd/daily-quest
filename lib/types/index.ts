@@ -113,6 +113,25 @@ export interface NotificationPreference {
   reminderHoursBefore: number
 }
 
+export interface Notification {
+  id: string
+  profileId: string
+  type: NotificationEvent
+  title: string
+  body: string
+  linkUrl: string | null
+  readAt: Date | null
+  createdAt: Date
+}
+
+export interface CreateNotificationInput {
+  profileId: string
+  type: NotificationEvent
+  title: string
+  body: string
+  linkUrl?: string | null
+}
+
 export interface CreateTaskInput {
   householdId: string
   categoryId: string
