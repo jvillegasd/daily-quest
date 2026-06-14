@@ -92,7 +92,7 @@ export default function PrivacyPage() {
       </main>
 
       <footer className="border-t border-border px-6 py-4 text-center text-sm text-fg-subtle">
-        vibecoded with love by{' '}
+        vibecoded with ❤️ by{' '}
         <a
           href="https://github.com/jvillegasd"
           target="_blank"

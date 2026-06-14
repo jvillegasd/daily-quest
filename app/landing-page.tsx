@@ -139,7 +139,7 @@ export function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-fg-subtle">
         <span>
-          vibecoded with love by{' '}
+          vibecoded with ❤️ by{' '}
           <a
             href="https://github.com/jvillegasd"
             target="_blank"

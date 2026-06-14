@@ -159,5 +159,5 @@ MIT — do whatever you want with it.
 ---
 
 <div align="center">
-  <sub>vibecoded with love by <a href="https://github.com/jvillegasd">jvillegasd</a></sub>
+  <sub>vibecoded with ❤️ by <a href="https://github.com/jvillegasd">jvillegasd</a></sub>
 </div>
