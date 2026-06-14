@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getProfile } from '@/lib/auth/get-profile'
 import { db } from '@/lib/db/implementation'
+import { parseBody, CategoryPatchSchema } from '@/lib/validation/schemas'
 
 async function authorize(categoryId: string, householdId: string) {
   const category = await db.categories.findById(categoryId)
@@ -25,6 +26,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params
   const { error } = await authorize(id, profile.householdId)
   if (error) return error
-  const category = await db.categories.update(id, await request.json())
+  const parsed = await parseBody(request, CategoryPatchSchema)
+  if (!parsed.ok) return parsed.response
+  const category = await db.categories.update(id, parsed.data)
   return NextResponse.json({ category })
 }

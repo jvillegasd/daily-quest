@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import bcrypt from 'bcryptjs'
+import { parseBody, RegisterSchema } from '@/lib/validation/schemas'
+import { enforceRateLimit } from '@/lib/security/rate-limit'
 
 export async function POST(request: Request) {
-  const { email, password, name } = await request.json()
-  if (!email || !password || !name) return NextResponse.json({ error: 'All fields required' }, { status: 400 })
+  const limited = enforceRateLimit(request, 'REGISTER')
+  if (limited) return limited
+
+  const parsed = await parseBody(request, RegisterSchema)
+  if (!parsed.ok) return parsed.response
+  const { email, password, name } = parsed.data
 
   const existing = await prisma.user.findUnique({ where: { email } })
 

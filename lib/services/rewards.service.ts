@@ -3,6 +3,7 @@ import { pointsService } from './points.service'
 import { notificationsService } from './notifications.service'
 import type { CreateRewardInput, Reward } from '@/lib/types'
 import { TIME } from '@/lib/constants'
+import { AppError } from '@/lib/errors'
 
 export const rewardsService = {
   async getByHousehold(householdId: string): Promise<Reward[]> {
@@ -23,7 +24,7 @@ export const rewardsService = {
 
   async claim(rewardId: string, claimedById: string, householdId: string) {
     const reward = await db.rewards.findById(rewardId)
-    if (!reward) throw new Error('Reward not found')
+    if (!reward) throw new AppError('Reward not found')
 
     if (reward.repeatable) {
       const lastClaim = await db.rewards.getLastClaim(rewardId, claimedById)
@@ -32,23 +33,23 @@ export const rewardsService = {
         const timeSinceClaim = Date.now() - lastClaim.claimedAt.getTime()
         if (timeSinceClaim < cooldownMs) {
           const hoursLeft = Math.ceil((cooldownMs - timeSinceClaim) / TIME.HOUR_MS)
-          throw new Error(`Reward on cooldown. Available in ${hoursLeft}h`)
+          throw new AppError(`Reward on cooldown. Available in ${hoursLeft}h`)
         }
       }
     } else if (reward.timesClaimed > 0) {
-      throw new Error('This reward has already been claimed')
+      throw new AppError('This reward has already been claimed')
     }
 
     const profile = await db.profiles.findById(claimedById)
-    if (!profile) throw new Error('Profile not found')
+    if (!profile) throw new AppError('Profile not found')
 
     if (reward.costType === 'PERSONAL' && profile.personalPoints < reward.cost) {
-      throw new Error('Not enough personal points')
+      throw new AppError('Not enough personal points')
     }
     if (reward.costType === 'SHARED') {
       const household = await db.households.findById(householdId)
       if (!household || household.sharedPoints < reward.cost) {
-        throw new Error('Not enough shared points')
+        throw new AppError('Not enough shared points')
       }
     }
 

@@ -3,9 +3,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import type enJson from '@/locales/en.json'
 
-export type Locale = 'en' | 'es'
-export const SUPPORTED_LOCALES = ['en', 'es'] as const satisfies readonly Locale[]
-export const DEFAULT_LOCALE: Locale = 'en'
+export { SUPPORTED_LOCALES, DEFAULT_LOCALE } from './locales'
+export type { Locale } from './locales'
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE, type Locale } from './locales'
 export type Translations = typeof enJson
 
 const STORAGE_KEY = 'dq_locale'
