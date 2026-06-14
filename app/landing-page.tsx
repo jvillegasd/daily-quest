@@ -123,7 +123,7 @@ export function LandingPage() {
             </h2>
             <p className="text-fg-muted leading-relaxed max-w-md">
               Daily Quest is completely free to use. Create your household, invite your party, and
-              start your adventure — no credit card required, ever.
+              start your adventure — no credit card required.
             </p>
             <Link
               href="/signup"
@@ -146,7 +146,7 @@ export function LandingPage() {
             rel="noopener noreferrer"
             className="text-gold hover:text-gold-bright transition-colors underline underline-offset-2"
           >
-            jvillegasd
+            @jvillegasd
           </a>
         </span>
         <Link href="/privacy" className="hover:text-fg-muted transition-colors">
