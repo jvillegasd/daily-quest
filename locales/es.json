@@ -164,7 +164,14 @@
     "signOut": "Cerrar Sesión",
     "languageTitle": "Idioma",
     "languageEnglish": "English",
-    "languageSpanish": "Español"
+    "languageSpanish": "Español",
+    "dangerZone": "Zona de Peligro",
+    "deleteAccountDescription": "Elimina permanentemente tu cuenta y todos los datos asociados. Esto no se puede deshacer.",
+    "deleteAccount": "Eliminar Mi Cuenta",
+    "deleteConfirmTitle": "¿Estás completamente seguro?",
+    "cancel": "Cancelar",
+    "deleteConfirmYes": "Sí, eliminar todo",
+    "deleting": "Eliminando…"
   },
   "levels": {
     "novice": "Novato",

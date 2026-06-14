@@ -190,24 +190,24 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
       {/* Danger zone */}
       <Card className="border-ruby/40">
         <CardHeader>
-          <CardTitle className="text-ruby">Danger Zone</CardTitle>
+          <CardTitle className="text-ruby">{t('settings.dangerZone')}</CardTitle>
         </CardHeader>
         <p className="text-sm text-fg-muted mb-4">
-          Permanently delete your account and all associated data. This cannot be undone.
+          {t('settings.deleteAccountDescription')}
         </p>
         {!deleteConfirm ? (
           <Button variant="danger" className="w-full" onClick={() => setDeleteConfirm(true)}>
-            <Trash2 size={14} /> Delete My Account
+            <Trash2 size={14} /> {t('settings.deleteAccount')}
           </Button>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm font-semibold text-ruby text-center">Are you absolutely sure?</p>
+            <p className="text-sm font-semibold text-ruby text-center">{t('settings.deleteConfirmTitle')}</p>
             <div className="flex gap-2">
               <Button variant="ghost" className="flex-1" onClick={() => setDeleteConfirm(false)} disabled={deleting}>
-                Cancel
+                {t('settings.cancel')}
               </Button>
               <Button variant="danger" className="flex-1" onClick={handleDeleteAccount} disabled={deleting}>
-                {deleting ? 'Deleting…' : 'Yes, delete everything'}
+                {deleting ? t('settings.deleting') : t('settings.deleteConfirmYes')}
               </Button>
             </div>
           </div>

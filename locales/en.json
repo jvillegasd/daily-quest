@@ -164,7 +164,14 @@
     "signOut": "Sign Out",
     "languageTitle": "Language",
     "languageEnglish": "English",
-    "languageSpanish": "Español"
+    "languageSpanish": "Español",
+    "dangerZone": "Danger Zone",
+    "deleteAccountDescription": "Permanently delete your account and all associated data. This cannot be undone.",
+    "deleteAccount": "Delete My Account",
+    "deleteConfirmTitle": "Are you absolutely sure?",
+    "cancel": "Cancel",
+    "deleteConfirmYes": "Yes, delete everything",
+    "deleting": "Deleting…"
   },
   "levels": {
     "novice": "Novice",
