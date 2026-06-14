@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createHash, timingSafeEqual } from 'crypto'
-import { prisma } from '@/lib/db/prisma'
-import { notificationsService } from '@/lib/services/notifications.service'
+import { runDailyNotifications } from '@/lib/jobs/daily-notifications'
 
 // Constant-time comparison (SHA-256 digests are equal length, so timingSafeEqual
 // never throws and the comparison time is independent of how much matches).
@@ -17,12 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const households = await prisma.household.findMany({ select: { id: true } })
-
-  for (const household of households) {
-    await notificationsService.sendDailyDigest(household.id)
-    await notificationsService.sendPendingReminder(household.id)
-  }
+  await runDailyNotifications()
 
   return NextResponse.json({ ok: true })
 }
