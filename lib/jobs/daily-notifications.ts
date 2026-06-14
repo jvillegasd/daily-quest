@@ -1,9 +1,8 @@
 import { prisma } from '@/lib/db/prisma'
 import { notificationsService } from '@/lib/services/notifications.service'
 
-// Shared daily-notifications job. Invoked two ways:
-//  - Coolify Scheduled Task running `node scripts/run-cron.cjs` inside the container (primary)
-//  - the secured POST /api/webhooks/cron endpoint (manual / fallback trigger)
+// Shared daily-notifications job, run by the Coolify Scheduled Task
+// (`node scripts/run-cron.cjs`) inside the running app container — no HTTP, no secret.
 export async function runDailyNotifications(): Promise<{ households: number }> {
   const households = await prisma.household.findMany({ select: { id: true } })
 

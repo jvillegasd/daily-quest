@@ -104,12 +104,16 @@ Or just place any PNG files there manually.
 
 ## Cron job for notifications
 
-Set up a daily cron that calls:
-```
-POST https://your-domain.com/api/webhooks/cron
-Authorization: Bearer YOUR_CRON_SECRET
-```
+Daily push/email notifications run as a **Coolify Scheduled Task** that executes the
+bundled job directly inside the running app container — no HTTP endpoint, no secret.
 
-In Coolify you can use a Cron resource, or use an external scheduler like cron-job.org (free).
+In Coolify → the `daily-quest` app → **Scheduled Tasks**, add one:
 
-Schedule: `0 8 * * *` (8am daily)
+- **Name:** `daily-notifications`
+- **Command:** `node scripts/run-cron.cjs`
+- **Container:** the app's running container name (required when more than one container exists)
+- **Frequency:** `0 13 * * *` (13:00 UTC daily)
+
+The command is bundled at Docker build time from `scripts/run-cron.ts` (see the Dockerfile).
+It calls `runDailyNotifications()` (`lib/jobs/daily-notifications.ts`), the same job used in
+development. Push/email delivery requires `VAPID_*` and `RESEND_API_KEY` to be set.
