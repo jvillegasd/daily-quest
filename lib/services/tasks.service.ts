@@ -1,6 +1,7 @@
 import { db } from '@/lib/db/implementation'
 import { notificationsService } from './notifications.service'
 import { pointsService } from './points.service'
+import type { LevelUpResult } from './points.service'
 import type { CreateTaskInput, Task } from '@/lib/types'
 
 export const tasksService = {
@@ -16,11 +17,11 @@ export const tasksService = {
     return task
   },
 
-  async complete(taskId: string, userId: string): Promise<Task> {
+  async complete(taskId: string, userId: string): Promise<{ task: Task; levelUp: LevelUpResult | null }> {
     const task = await db.tasks.complete(taskId, userId)
-    await pointsService.awardForTask(task, userId)
+    const levelUp = await pointsService.awardForTask(task, userId)
     await notificationsService.sendTaskCompleted(task, userId)
-    return task
+    return { task, levelUp }
   },
 
   async update(id: string, data: Partial<CreateTaskInput>): Promise<Task> {

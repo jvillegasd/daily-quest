@@ -15,14 +15,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const profile = await getProfile()
   if (!profile?.householdId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
-  const { error, task } = await authorize(id, profile.householdId)
+  const { error, task: existing } = await authorize(id, profile.householdId)
   if (error) return error
   const body = await request.json()
   if (body.action === TASK_ACTION.COMPLETE) {
-    if (task!.pointsType === POINTS_TYPE.PERSONAL && task!.assignedToId && task!.assignedToId !== profile.id) {
+    if (existing!.pointsType === POINTS_TYPE.PERSONAL && existing!.assignedToId && existing!.assignedToId !== profile.id) {
       return NextResponse.json({ error: 'Only the assigned member can complete this quest' }, { status: 403 })
     }
-    return NextResponse.json({ task: await tasksService.complete(id, profile.id) })
+    const { task, levelUp } = await tasksService.complete(id, profile.id)
+    return NextResponse.json({ task, levelUp })
   }
   if (body.action === TASK_ACTION.SKIP) return NextResponse.json({ task: await tasksService.skip(id) })
   return NextResponse.json({ task: await tasksService.update(id, body) })

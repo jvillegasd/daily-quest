@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Avatar } from '@/components/layout/avatar'
 import { useTranslation } from '@/lib/i18n/use-translation'
+import { useLevelUp } from '@/components/level-up-toast'
 import { hexToRgba } from '@/lib/utils/color'
 import { TASK_STATUS, TASK_TYPE, POINTS_TYPE, TASK_FILTER, TASK_ACTION, FORM_DEFAULTS, type TaskFilter } from '@/lib/types'
 import type { Profile, Task, Category } from '@/lib/types'
@@ -49,6 +50,7 @@ function Confetti() {
 
 export function QuestsClient({ profile, initialTasks, categories, members }: Props) {
   const { locale, t } = useTranslation()
+  const { triggerLevelUp } = useLevelUp()
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [filter, setFilter] = useState<TaskFilter>(TASK_FILTER.ALL)
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -99,8 +101,9 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: TASK_ACTION.COMPLETE }),
     })
-    const { task } = await res.json()
+    const { task, levelUp } = await res.json()
     setTasks((prev) => prev.map((item) => item.id === taskId ? task : item))
+    if (levelUp) triggerLevelUp(levelUp)
     setCelebrating(true)
     setTimeout(() => setCelebrating(false), ANIMATION.CELEBRATION_MS)
     setLoading(null)
