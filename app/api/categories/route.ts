@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getProfile } from '@/lib/auth/get-profile'
 import { db } from '@/lib/db/implementation'
+import { parseBody, CategoryCreateSchema } from '@/lib/validation/schemas'
 
 export async function GET() {
   const profile = await getProfile()
@@ -12,7 +13,8 @@ export async function GET() {
 export async function POST(request: Request) {
   const profile = await getProfile()
   if (!profile?.householdId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const body = await request.json()
-  const category = await db.categories.create({ ...body, householdId: profile.householdId, isDefault: false })
+  const parsed = await parseBody(request, CategoryCreateSchema)
+  if (!parsed.ok) return parsed.response
+  const category = await db.categories.create({ ...parsed.data, householdId: profile.householdId, isDefault: false })
   return NextResponse.json({ category }, { status: 201 })
 }

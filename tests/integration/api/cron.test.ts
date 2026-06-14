@@ -1,7 +1,12 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { POST } from '@/app/api/webhooks/cron/route'
 import { useTestDb } from '../helpers/db'
 import { makeRequest } from '../helpers/route-caller'
+
+// The route fails closed when CRON_SECRET is unset, so the test must configure one.
+beforeAll(() => {
+  process.env.CRON_SECRET = 'test-cron-secret'
+})
 
 vi.mock('@/lib/services/notifications.service', () => ({
   notificationsService: {
