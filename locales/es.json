@@ -152,7 +152,8 @@
     "categoryTaskCount": "{{count}} tarea(s) asignada(s) — desasigna antes de eliminar",
     "categoryDeleteConfirm": "¿Eliminar esta categoría?",
     "categoryDeleteYes": "Eliminar",
-    "categoryDeleteNo": "Cancelar"
+    "categoryDeleteNo": "Cancelar",
+    "makeAdmin": "Hacer Admin"
   },
   "settings": {
     "title": "⚙️ Ajustes",

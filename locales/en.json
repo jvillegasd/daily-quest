@@ -152,7 +152,8 @@
     "categoryTaskCount": "{{count}} task(s) assigned — unassign before deleting",
     "categoryDeleteConfirm": "Delete this category?",
     "categoryDeleteYes": "Delete",
-    "categoryDeleteNo": "Cancel"
+    "categoryDeleteNo": "Cancel",
+    "makeAdmin": "Make Admin"
   },
   "settings": {
     "title": "⚙️ Settings",

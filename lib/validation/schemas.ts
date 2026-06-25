@@ -69,6 +69,10 @@ export const InviteAcceptSchema = z.object({
   token: z.string().min(1),
 })
 
+export const AdminTransferSchema = z.object({
+  targetProfileId: id,
+})
+
 // ---- Tasks ----
 
 export const TaskCreateSchema = z.object({

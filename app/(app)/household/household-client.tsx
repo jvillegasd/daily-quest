@@ -22,8 +22,10 @@ interface Props {
   categories: Category[]
 }
 
-export function HouseholdClient({ profile, household, members, categories: initialCats }: Props) {
+export function HouseholdClient({ profile, household, members: initialMembers, categories: initialCats }: Props) {
   const { t } = useTranslation()
+  const [members, setMembers] = useState<Profile[]>(initialMembers)
+  const [myRole, setMyRole] = useState(profile.role)
   const [categories, setCategories] = useState<Category[]>(initialCats)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
@@ -33,7 +35,26 @@ export function HouseholdClient({ profile, household, members, categories: initi
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: '', icon: '', color: '', defaultPoints: 10 })
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
-  const isAdmin = profile.role === ROLE.ADMIN
+  const [transferringAdminId, setTransferringAdminId] = useState<string | null>(null)
+  const isAdmin = myRole === ROLE.ADMIN
+
+  async function handleTransferAdmin(targetProfileId: string) {
+    if (!isAdmin || targetProfileId === profile.id) return
+    setTransferringAdminId(targetProfileId)
+    const res = await fetch(API.ADMIN_TRANSFER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetProfileId }),
+    })
+    if (res.ok) {
+      setMyRole(ROLE.MEMBER)
+      setMembers((prev) => prev.map((member) => ({
+        ...member,
+        role: member.id === targetProfileId ? ROLE.ADMIN : member.id === profile.id ? ROLE.MEMBER : member.role,
+      })))
+    }
+    setTransferringAdminId(null)
+  }
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
@@ -123,6 +144,17 @@ export function HouseholdClient({ profile, household, members, categories: initi
                 <p className="text-xs text-fg-muted">{t('household.personalPts')}</p>
               </div>
               {member.role === ROLE.ADMIN && <Badge variant="gold">{t('common.admin')}</Badge>}
+              {isAdmin && member.id !== profile.id && member.role !== ROLE.ADMIN && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  loading={transferringAdminId === member.id}
+                  onClick={() => handleTransferAdmin(member.id)}
+                >
+                  {t('household.makeAdmin')}
+                </Button>
+              )}
             </motion.div>
           ))}
         </div>
