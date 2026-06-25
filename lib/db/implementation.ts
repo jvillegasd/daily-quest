@@ -41,10 +41,10 @@ export const db: Database = {
     async create(data) {
       return prisma.profile.create({ data })
     },
-    async joinHousehold(profileId, householdId) {
+    async joinHousehold(profileId, householdId, role) {
       return prisma.profile.update({
         where: { id: profileId },
-        data: { householdId },
+        data: { householdId, ...(role ? { role } : {}) },
       })
     },
     async addPersonalPoints(profileId, points) {

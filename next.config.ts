@@ -5,11 +5,11 @@ import type { NextConfig } from 'next'
 // CSP is adopted. img-src allows Google/Supabase avatar hosts.
 const contentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.supabase.co",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co",
+  "connect-src 'self' https://*.supabase.co https://cloudflareinsights.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -35,7 +35,10 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ['@prisma/client'],
   async headers() {
-    return [{ source: '/(.*)', headers: securityHeaders }]
+    return [
+      { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache' }, ...securityHeaders] },
+      { source: '/(.*)', headers: securityHeaders },
+    ]
   },
 }
 

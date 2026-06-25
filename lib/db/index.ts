@@ -30,7 +30,7 @@ export interface ProfileRepository {
     displayName: string
     avatarUrl?: string | null
   }): Promise<Profile>
-  joinHousehold(profileId: string, householdId: string): Promise<Profile>
+  joinHousehold(profileId: string, householdId: string, role?: Profile['role']): Promise<Profile>
   addPersonalPoints(profileId: string, points: number): Promise<Profile>
   deductPersonalPoints(profileId: string, points: number): Promise<Profile>
   update(profileId: string, data: Partial<Pick<Profile, 'displayName' | 'avatarUrl' | 'locale'>>): Promise<Profile>
