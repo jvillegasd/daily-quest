@@ -46,8 +46,9 @@
     "joinHousehold": "Unirse a {{name}}",
     "joinHouseholdBtn": "🏰 Unirse al Hogar",
     "joinHouseholdFailed": "Error al unirse al hogar",
-    "inviteEmailHint": "El admin usó tu correo para enviarte este enlace. Escribe el correo que quieres para tu cuenta de Daily Quest, o usa Google arriba.",
-    "inviteSignedInHint": "Ya iniciaste sesión. Acepta la invitación para unirte a este hogar."
+    "inviteEmailHint": "Esta invitación de un solo uso expira después de 7 días o al usarse. Escribe el correo que quieres para tu cuenta de Daily Quest, o usa Google arriba.",
+    "inviteSignedInHint": "Ya iniciaste sesión. Acepta la invitación para unirte a este hogar.",
+    "invalidInvite": "Esta invitación no es válida, expiró o ya fue usada."
   },
   "dashboard": {
     "kingdomOf": "Reino de",

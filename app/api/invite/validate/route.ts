@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db/implementation'
+import { prisma } from '@/lib/db/prisma'
 import { enforceRateLimit } from '@/lib/security/rate-limit'
 
 // Intentionally public: not-yet-registered users follow an invite link and must
@@ -11,8 +11,13 @@ export async function GET(request: Request) {
   const token = new URL(request.url).searchParams.get('token')
   if (!token) return NextResponse.json({ error: 'No token' }, { status: 400 })
 
-  const household = await db.households.findByInviteCode(token)
-  if (!household) return NextResponse.json({ error: 'Invalid token' }, { status: 404 })
+  const invitation = await prisma.invitation.findUnique({
+    where: { token },
+    include: { household: true },
+  })
+  if (!invitation || invitation.usedAt || invitation.expiresAt <= new Date()) {
+    return NextResponse.json({ error: 'Invalid or expired invite' }, { status: 404 })
+  }
 
-  return NextResponse.json({ householdName: household.name })
+  return NextResponse.json({ householdName: invitation.household.name })
 }

@@ -46,8 +46,9 @@
     "joinHousehold": "Join {{name}}",
     "joinHouseholdBtn": "🏰 Join the Household",
     "joinHouseholdFailed": "Failed to join household",
-    "inviteEmailHint": "The admin used your email to send this link. Enter the email you want for your Daily Quest account, or use Google above.",
-    "inviteSignedInHint": "You are signed in. Accept the invitation to join this household."
+    "inviteEmailHint": "This one-time invite expires after 7 days or after it is used. Enter the email you want for your Daily Quest account, or use Google above.",
+    "inviteSignedInHint": "You are signed in. Accept the invitation to join this household.",
+    "invalidInvite": "This invitation is invalid, expired, or already used."
   },
   "dashboard": {
     "kingdomOf": "Kingdom of",

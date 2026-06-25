@@ -36,10 +36,10 @@ function InviteForm() {
   useEffect(() => {
     if (token) {
       fetch(`/api/invite/validate?token=${token}`)
-        .then((r) => r.json())
-        .then((d) => { if (d.householdName) setHouseholdName(d.householdName) })
+        .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+        .then(({ ok, d }) => { ok && d.householdName ? setHouseholdName(d.householdName) : setError(t('auth.invalidInvite')) })
     }
-  }, [token])
+  }, [token, t])
 
   const acceptInvite = useCallback(async () => {
     if (!token) return

@@ -70,10 +70,25 @@ model Household {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  members    Profile[]
-  categories Category[]
-  tasks      Task[]
-  rewards    Reward[]
+  members     Profile[]
+  categories  Category[]
+  tasks       Task[]
+  rewards     Reward[]
+  invitations Invitation[]
+}
+
+model Invitation {
+  id          String    @id @default(cuid())
+  householdId String
+  email       String
+  token       String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
 }
 
 model Profile {
