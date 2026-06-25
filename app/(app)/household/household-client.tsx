@@ -22,7 +22,7 @@ interface Props {
   categories: Category[]
 }
 
-export function HouseholdClient({ household, members, categories: initialCats }: Props) {
+export function HouseholdClient({ profile, household, members, categories: initialCats }: Props) {
   const { t } = useTranslation()
   const [categories, setCategories] = useState<Category[]>(initialCats)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -33,9 +33,11 @@ export function HouseholdClient({ household, members, categories: initialCats }:
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: '', icon: '', color: '', defaultPoints: 10 })
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const isAdmin = profile.role === ROLE.ADMIN
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
+    if (!isAdmin) return
     setInviting(true)
     const res = await fetch(API.INVITE, {
       method: 'POST',
@@ -127,25 +129,27 @@ export function HouseholdClient({ household, members, categories: initialCats }:
       </Card>
 
       {/* Invite */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('household.inviteHero')}</CardTitle>
-        </CardHeader>
-        <form onSubmit={handleInvite} className="flex gap-2">
-          <Input
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            placeholder={t('household.invitePlaceholder')}
-            type="email"
-            className="flex-1"
-            required
-          />
-          <Button type="submit" size="md" loading={inviting}>
-            <Send size={14} /> {t('household.inviteBtn')}
-          </Button>
-        </form>
-        {inviteMsg && <p className="text-sm text-emerald mt-2">{inviteMsg}</p>}
-      </Card>
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('household.inviteHero')}</CardTitle>
+          </CardHeader>
+          <form onSubmit={handleInvite} className="flex gap-2">
+            <Input
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder={t('household.invitePlaceholder')}
+              type="email"
+              className="flex-1"
+              required
+            />
+            <Button type="submit" size="md" loading={inviting}>
+              <Send size={14} /> {t('household.inviteBtn')}
+            </Button>
+          </form>
+          {inviteMsg && <p className="text-sm text-emerald mt-2">{inviteMsg}</p>}
+        </Card>
+      )}
 
       {/* Categories */}
       <Card>
