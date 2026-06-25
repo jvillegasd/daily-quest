@@ -68,8 +68,8 @@ describe('authConfig.callbacks.authorized', () => {
 
     it('allows access to /invite', async () => {
       const result = await authorized(makeParams(true, '/invite'))
-      // Authenticated users can still accept invites
-      expect(result).not.toBe(false)
+      // Authenticated users can still accept invites.
+      expect(result).toBe(true)
     })
 
     it('allows access to /dashboard', async () => {

@@ -24,7 +24,7 @@ describe('POST /api/invite', () => {
   it('allows admins to send invites', async () => {
     const household = await createHousehold()
     const user = await createUser({ email: 'admin@test.com' })
-    await createProfile(user.id, household.id, { role: 'ADMIN' })
+    await createProfile(user.id, household.id, { role: 'ADMIN', displayName: 'Hero' })
     vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as never)
 
     const req = makeRequest('POST', 'http://localhost/api/invite', { email: 'friend@test.com' }, { 'x-forwarded-for': '1.1.1.1' })
@@ -32,6 +32,14 @@ describe('POST /api/invite', () => {
 
     expect(res.status).toBe(200)
     expect(sendMock).toHaveBeenCalledOnce()
+    expect(sendMock).toHaveBeenCalledWith(expect.objectContaining({
+      to: 'friend@test.com',
+      subject: 'Hero invites you to Daily Quest',
+      text: expect.stringContaining(`/invite?token=${household.inviteCode}`),
+      html: expect.stringContaining('Your household adventure awaits'),
+    }))
+    expect(sendMock.mock.calls[0][0].html).toContain(`/invite?token=${household.inviteCode}`)
+    expect(sendMock.mock.calls[0][0].html).toContain('Google or email')
   })
 
   it('returns 502 when Resend rejects the email', async () => {

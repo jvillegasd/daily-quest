@@ -45,7 +45,9 @@
     "youreInvited": "You're Invited!",
     "joinHousehold": "Join {{name}}",
     "joinHouseholdBtn": "🏰 Join the Household",
-    "joinHouseholdFailed": "Failed to join household"
+    "joinHouseholdFailed": "Failed to join household",
+    "inviteEmailHint": "The admin used your email to send this link. Enter the email you want for your Daily Quest account, or use Google above.",
+    "inviteSignedInHint": "You are signed in. Accept the invitation to join this household."
   },
   "dashboard": {
     "kingdomOf": "Kingdom of",
