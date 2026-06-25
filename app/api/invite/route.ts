@@ -25,14 +25,18 @@ export async function POST(request: Request) {
   // Escape user-controlled values before interpolating into the email HTML.
   const inviterName = escapeHtml(profile.displayName)
   const householdName = escapeHtml(household.name)
-  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite?token=${household.inviteCode}`
+  const inviteUrl = new URL(
+    `/invite?token=${household.inviteCode}`,
+    process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || request.url,
+  ).toString()
 
   const resend = new Resend(process.env.RESEND_API_KEY)
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL!,
     to: email,
     subject: `${profile.displayName} invites you to Daily Quest`,
     html: `<h2>⚔️ You've been invited!</h2><p><strong>${inviterName}</strong> invited you to join <strong>${householdName}</strong>.</p><a href="${inviteUrl}" style="background:#c9a84c;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Accept Invitation</a>`,
   })
+  if (error) return NextResponse.json({ error: error.message }, { status: 502 })
   return NextResponse.json({ ok: true })
 }

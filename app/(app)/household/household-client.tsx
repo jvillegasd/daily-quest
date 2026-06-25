@@ -22,7 +22,7 @@ interface Props {
   categories: Category[]
 }
 
-export function HouseholdClient({ profile, household, members, categories: initialCats }: Props) {
+export function HouseholdClient({ household, members, categories: initialCats }: Props) {
   const { t } = useTranslation()
   const [categories, setCategories] = useState<Category[]>(initialCats)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -42,7 +42,8 @@ export function HouseholdClient({ profile, household, members, categories: initi
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: inviteEmail }),
     })
-    setInviteMsg(res.ok ? t('household.inviteSent') : t('household.inviteFailed'))
+    const data = await res.json().catch(() => null)
+    setInviteMsg(res.ok ? t('household.inviteSent') : (data?.error ?? t('household.inviteFailed')))
     setInviting(false)
     setInviteEmail('')
   }

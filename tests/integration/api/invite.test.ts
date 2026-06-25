@@ -34,6 +34,21 @@ describe('POST /api/invite', () => {
     expect(sendMock).toHaveBeenCalledOnce()
   })
 
+  it('returns 502 when Resend rejects the email', async () => {
+    sendMock.mockResolvedValueOnce({ data: null, error: { message: 'Domain not verified' } })
+    const household = await createHousehold()
+    const user = await createUser({ email: 'admin2@test.com' })
+    await createProfile(user.id, household.id, { role: 'ADMIN' })
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as never)
+
+    const req = makeRequest('POST', 'http://localhost/api/invite', { email: 'friend@test.com' }, { 'x-forwarded-for': '3.3.3.3' })
+    const res = await POST(req as never)
+    const data = await res.json()
+
+    expect(res.status).toBe(502)
+    expect(data.error).toBe('Domain not verified')
+  })
+
   it('returns 403 for non-admin household members', async () => {
     const household = await createHousehold()
     const user = await createUser({ email: 'member@test.com' })
