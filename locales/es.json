@@ -97,7 +97,13 @@
     "assignToLabel": "Asignar a",
     "assignToOpen": "Abierto (cualquiera)",
     "dueDateLabel": "Fecha límite (opcional)",
-    "createQuestBtn": "Crear Misión"
+    "createQuestBtn": "Crear Misión",
+    "editTitle": "📜 Editar Misión",
+    "completeAction": "Completar misión",
+    "skipAction": "Omitir misión",
+    "editAction": "Editar misión",
+    "deleteAction": "Eliminar misión",
+    "deleteConfirm": "¿Eliminar esta misión?"
   },
   "rewards": {
     "title": "Sala del Tesoro",
@@ -128,7 +134,11 @@
     "repeatableYes": "Sí",
     "repeatableNo": "Una vez",
     "cooldownLabel": "Tiempo de espera (horas)",
-    "createRewardBtn": "Crear Recompensa"
+    "createRewardBtn": "Crear Recompensa",
+    "editTitle": "🏆 Editar Recompensa",
+    "editAction": "Editar recompensa",
+    "deleteAction": "Eliminar recompensa",
+    "deleteConfirm": "¿Eliminar esta recompensa?"
   },
   "household": {
     "subtitle": "Administra tu grupo del hogar",

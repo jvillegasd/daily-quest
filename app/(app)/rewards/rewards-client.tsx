@@ -2,16 +2,17 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus } from 'lucide-react'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ActionTooltip } from '@/components/ui/action-tooltip'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { useTranslation } from '@/lib/i18n/use-translation'
 import { EmojiPicker } from '@/components/ui/emoji-picker'
-import { REWARD_TYPE, POINTS_TYPE, FORM_DEFAULTS } from '@/lib/types'
+import { ROLE, REWARD_TYPE, POINTS_TYPE, FORM_DEFAULTS } from '@/lib/types'
 import type { Profile, Reward, Household } from '@/lib/types'
 import { API } from '@/lib/constants'
 import { ANIMATION } from '@/lib/constants'
@@ -22,11 +23,14 @@ interface Props {
   household: Household
 }
 
-function RewardCard({ reward, canAfford, onClaim, loading, t }: {
+function RewardCard({ reward, canAfford, onClaim, onEdit, onDelete, loading, isAdmin, t }: {
   reward: Reward
   canAfford: boolean
   onClaim: () => void
+  onEdit: () => void
+  onDelete: () => void
   loading: boolean
+  isAdmin: boolean
   t: (key: string, vars?: Record<string, string | number>) => string
 }) {
   return (
@@ -41,6 +45,20 @@ function RewardCard({ reward, canAfford, onClaim, loading, t }: {
         <div className="flex items-start justify-between">
           <div className="text-3xl">{reward.icon}</div>
           <div className="flex gap-1.5 flex-wrap justify-end">
+            {isAdmin && (
+              <>
+                <ActionTooltip label={t('rewards.editAction')}>
+                  <Button variant="outline" size="sm" onClick={onEdit} aria-label={t('rewards.editAction')}>
+                    <Pencil size={14} />
+                  </Button>
+                </ActionTooltip>
+                <ActionTooltip label={t('rewards.deleteAction')}>
+                  <Button variant="danger" size="sm" onClick={onDelete} aria-label={t('rewards.deleteAction')}>
+                    <Trash2 size={14} />
+                  </Button>
+                </ActionTooltip>
+              </>
+            )}
             <Badge variant={reward.type === REWARD_TYPE.VIRTUAL ? 'sapphire' : 'amber'}>
               {reward.type === 'VIRTUAL' ? t('rewards.virtual') : t('rewards.pledge')}
             </Badge>
@@ -78,7 +96,9 @@ function RewardCard({ reward, canAfford, onClaim, loading, t }: {
 export function RewardsClient({ profile, initialRewards, household }: Props) {
   const { t } = useTranslation()
   const [rewards, setRewards] = useState<Reward[]>(initialRewards)
+  const isAdmin = profile.role === ROLE.ADMIN
   const [showCreate, setShowCreate] = useState(false)
+  const [editing, setEditing] = useState<Reward | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
   const [claimMsg, setClaimMsg] = useState('')
   const [form, setForm] = useState<{
@@ -109,16 +129,38 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
     setLoading(null)
   }
 
-  async function handleCreate(e: React.FormEvent) {
+  function blankForm() {
+    return { title: '', description: '', icon: FORM_DEFAULTS.REWARD.icon, type: FORM_DEFAULTS.REWARD.type, cost: FORM_DEFAULTS.REWARD.cost, costType: FORM_DEFAULTS.REWARD.costType, repeatable: FORM_DEFAULTS.REWARD.repeatable, cooldownHours: FORM_DEFAULTS.REWARD.cooldownHours }
+  }
+
+  function editReward(reward: Reward) {
+    setEditing(reward)
+    setForm({ title: reward.title, description: reward.description ?? '', icon: reward.icon, type: reward.type, cost: reward.cost, costType: reward.costType, repeatable: reward.repeatable, cooldownHours: reward.cooldownHours })
+  }
+
+  function closeForm() {
+    setShowCreate(false)
+    setEditing(null)
+    setForm(blankForm())
+  }
+
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    const res = await fetch(API.REWARDS, {
-      method: 'POST',
+    const res = await fetch(editing ? API.REWARD(editing.id) : API.REWARDS, {
+      method: editing ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, cost: Number(form.cost), cooldownHours: Number(form.cooldownHours) }),
     })
+    if (!res.ok) return
     const { reward } = await res.json()
-    setRewards((prev) => [reward, ...prev])
-    setShowCreate(false)
+    setRewards((prev) => editing ? prev.map((r) => r.id === reward.id ? reward : r) : [reward, ...prev])
+    closeForm()
+  }
+
+  async function handleDelete(rewardId: string) {
+    if (!confirm(t('rewards.deleteConfirm'))) return
+    const res = await fetch(API.REWARD(rewardId), { method: 'DELETE' })
+    if (res.ok) setRewards((prev) => prev.filter((reward) => reward.id !== rewardId))
   }
 
   return (
@@ -131,9 +173,11 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
             {' '}· <span className="text-sapphire font-semibold">{household.sharedPoints} {t('common.shared')}</span>
           </p>
         </div>
-        <Button onClick={() => setShowCreate(true)} size="sm">
-          <Plus size={14} /> {t('rewards.newReward')}
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => setShowCreate(true)} size="sm">
+            <Plus size={14} /> {t('rewards.newReward')}
+          </Button>
+        )}
       </div>
 
       {claimMsg && (
@@ -161,7 +205,10 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
                 reward={reward}
                 canAfford={canAfford(reward)}
                 onClaim={() => handleClaim(reward.id)}
+                onEdit={() => editReward(reward)}
+                onDelete={() => handleDelete(reward.id)}
                 loading={loading === reward.id}
+                isAdmin={isAdmin}
                 t={t}
               />
             ))}
@@ -169,8 +216,8 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
         )}
       </AnimatePresence>
 
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title={t('rewards.createTitle')}>
-        <form onSubmit={handleCreate} className="space-y-3">
+      <Modal open={showCreate || !!editing} onClose={closeForm} title={editing ? t('rewards.editTitle') : t('rewards.createTitle')}>
+        <form onSubmit={handleSave} className="space-y-3">
           <div className="grid grid-cols-5 gap-2">
             <EmojiPicker label={t('rewards.iconLabel')} value={form.icon} onChange={(emoji) => setForm({ ...form, icon: emoji })} />
             <div className="col-span-4">
@@ -199,8 +246,8 @@ export function RewardsClient({ profile, initialRewards, household }: Props) {
             <Input label={t('rewards.cooldownLabel')} type="number" min={1} value={form.cooldownHours} onChange={(e) => setForm({ ...form, cooldownHours: Number(e.target.value) })} />
           )}
           <div className="flex gap-2 pt-2">
-            <Button type="button" variant="ghost" className="flex-1" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
-            <Button type="submit" className="flex-1">{t('rewards.createRewardBtn')}</Button>
+            <Button type="button" variant="ghost" className="flex-1" onClick={closeForm}>{t('common.cancel')}</Button>
+            <Button type="submit" className="flex-1">{editing ? t('common.save') : t('rewards.createRewardBtn')}</Button>
           </div>
         </form>
       </Modal>
