@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getProfile } from '@/lib/auth/get-profile'
 import { rewardsService } from '@/lib/services/rewards.service'
 import { db } from '@/lib/db/implementation'
+import { ROLE } from '@/lib/types'
 import { parseBody, RewardPatchSchema } from '@/lib/validation/schemas'
 
 async function authorize(rewardId: string, householdId: string) {
@@ -14,6 +15,7 @@ async function authorize(rewardId: string, householdId: string) {
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const profile = await getProfile()
   if (!profile?.householdId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (profile.role !== ROLE.ADMIN) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const { id } = await params
   const { error } = await authorize(id, profile.householdId)
   if (error) return error
@@ -26,6 +28,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const profile = await getProfile()
   if (!profile?.householdId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (profile.role !== ROLE.ADMIN) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const { id } = await params
   const { error } = await authorize(id, profile.householdId)
   if (error) return error

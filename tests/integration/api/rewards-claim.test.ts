@@ -3,7 +3,7 @@ import { auth } from '@/auth'
 import { POST } from '@/app/api/rewards/[id]/claim/route'
 import { useTestDb } from '../helpers/db'
 import { makeRequest, makeParams } from '../helpers/route-caller'
-import { seedFullHousehold, createReward } from '@/tests/factories'
+import { createHousehold, createProfile, createReward, createUser, seedFullHousehold } from '@/tests/factories'
 import { prisma } from '@/lib/db/prisma'
 
 vi.mock('@/lib/services/notifications.service', () => ({
@@ -29,6 +29,19 @@ describe('POST /api/rewards/[id]/claim', () => {
     expect(res.status).toBe(400)
     const data = await res.json()
     expect(data.error).toMatch(/not found/i)
+  })
+
+
+  it('forbids cross-household claims', async () => {
+    const { user } = await seedFullHousehold()
+    const otherHousehold = await createHousehold('Other Claims')
+    const otherUser = await createUser({ email: 'other-claim@test.com' })
+    const otherProfile = await createProfile(otherUser.id, otherHousehold.id)
+    const reward = await createReward(otherHousehold.id, otherProfile.id, { cost: 0, costType: 'PERSONAL' })
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
+
+    const res = await POST(makeRequest('POST', `http://localhost/api/rewards/${reward.id}/claim`) as any, { params: makeParams({ id: reward.id }) })
+    expect(res.status).toBe(403)
   })
 
   it('returns 400 when not enough personal points', async () => {

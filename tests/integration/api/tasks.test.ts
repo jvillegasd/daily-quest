@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { auth } from '@/auth'
 import { GET, POST } from '@/app/api/tasks/route'
 import { PATCH, DELETE } from '@/app/api/tasks/[id]/route'
 import { useTestDb } from '../helpers/db'
 import { makeRequest, makeParams } from '../helpers/route-caller'
-import { seedFullHousehold, createTask } from '@/tests/factories'
+import { seedFullHousehold, createTask, createHousehold, createCategory, createUser, createProfile } from '@/tests/factories'
+import { prisma } from '@/lib/db/prisma'
 
 vi.mock('@/lib/services/notifications.service', () => ({
   notificationsService: {
@@ -27,7 +28,7 @@ describe('GET /api/tasks', () => {
   })
 
   it('returns 401 when profile has no household', async () => {
-    const { user } = await seedFullHousehold()
+    await seedFullHousehold()
     // Profile without household — create a fresh one
     const { prisma } = await import('@/lib/db/prisma')
     const u2 = await prisma.user.create({ data: { email: 'nohh@test.com', name: 'No HH' } })
@@ -53,7 +54,8 @@ describe('POST /api/tasks', () => {
   useTestDb()
 
   it('creates a task and returns 201', async () => {
-    const { user, category } = await seedFullHousehold()
+    const { user, profile, category } = await seedFullHousehold()
+    await prisma.profile.update({ where: { id: profile.id }, data: { role: 'ADMIN' } })
     vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
 
     const req = makeRequest('POST', 'http://localhost/api/tasks', {
@@ -67,6 +69,17 @@ describe('POST /api/tasks', () => {
     expect(res.status).toBe(201)
     const data = await res.json()
     expect(data.task.title).toBe('New Quest')
+  })
+
+  it('forbids members', async () => {
+    const { user, category } = await seedFullHousehold()
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
+
+    const res = await POST(makeRequest('POST', 'http://localhost/api/tasks', {
+      categoryId: category.id, title: 'Nope', points: 20, pointsType: 'PERSONAL', type: 'ONE_OFF',
+    }) as any)
+
+    expect(res.status).toBe(403)
   })
 })
 
@@ -84,13 +97,66 @@ describe('PATCH /api/tasks/[id]', () => {
     const data = await res.json()
     expect(data.task.status).toBe('DONE')
   })
+
+
+  it('lets admins edit a task and forbids members', async () => {
+    const { user, household, profile, category } = await seedFullHousehold()
+    const task = await createTask(household.id, category.id, profile.id)
+
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
+    let req = makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { title: 'Member edit' })
+    expect((await PATCH(req as any, { params: makeParams({ id: task.id }) })).status).toBe(403)
+
+    await prisma.profile.update({ where: { id: profile.id }, data: { role: 'ADMIN' } })
+    req = makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { title: 'Admin edit' })
+    const res = await PATCH(req as any, { params: makeParams({ id: task.id }) })
+    expect(res.status).toBe(200)
+    await expect(prisma.task.findUniqueOrThrow({ where: { id: task.id } })).resolves.toMatchObject({ title: 'Admin edit' })
+  })
+
+  it('keeps member skip allowed', async () => {
+    const { user, household, profile, category } = await seedFullHousehold()
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
+    const task = await createTask(household.id, category.id, profile.id)
+
+    const res = await PATCH(makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { action: 'skip' }) as any, { params: makeParams({ id: task.id }) })
+    expect(res.status).toBe(200)
+    const data = await res.json()
+    expect(data.task.status).toBe('SKIPPED')
+  })
+
+  it('forbids cross-household edits', async () => {
+    const { user, profile } = await seedFullHousehold()
+    await prisma.profile.update({ where: { id: profile.id }, data: { role: 'ADMIN' } })
+    const otherHousehold = await createHousehold('Other')
+    const otherUser = await createUser({ email: 'other-task@test.com' })
+    const otherProfile = await createProfile(otherUser.id, otherHousehold.id, { role: 'ADMIN' })
+    const otherCategory = await createCategory(otherHousehold.id)
+    const task = await createTask(otherHousehold.id, otherCategory.id, otherProfile.id)
+
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
+    const res = await PATCH(makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { title: 'Bad' }) as any, { params: makeParams({ id: task.id }) })
+    expect(res.status).toBe(403)
+  })
 })
 
 describe('DELETE /api/tasks/[id]', () => {
   useTestDb()
 
+
+
+  it('forbids members', async () => {
+    const { user, household, profile, category } = await seedFullHousehold()
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
+    const task = await createTask(household.id, category.id, profile.id)
+
+    const res = await DELETE(makeRequest('DELETE', `http://localhost/api/tasks/${task.id}`) as any, { params: makeParams({ id: task.id }) })
+    expect(res.status).toBe(403)
+  })
+
   it('deletes a task', async () => {
     const { user, household, profile, category } = await seedFullHousehold()
+    await prisma.profile.update({ where: { id: profile.id }, data: { role: 'ADMIN' } })
     vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
     const task = await createTask(household.id, category.id, profile.id)
 

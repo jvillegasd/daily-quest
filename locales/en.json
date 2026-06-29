@@ -97,7 +97,13 @@
     "assignToLabel": "Assign To",
     "assignToOpen": "Open (anyone)",
     "dueDateLabel": "Due Date (optional)",
-    "createQuestBtn": "Create Quest"
+    "createQuestBtn": "Create Quest",
+    "editTitle": "📜 Edit Quest",
+    "completeAction": "Complete quest",
+    "skipAction": "Skip quest",
+    "editAction": "Edit quest",
+    "deleteAction": "Delete quest",
+    "deleteConfirm": "Delete this quest?"
   },
   "rewards": {
     "title": "Treasure Room",
@@ -128,7 +134,11 @@
     "repeatableYes": "Yes",
     "repeatableNo": "One-time",
     "cooldownLabel": "Cooldown (hours)",
-    "createRewardBtn": "Create Reward"
+    "createRewardBtn": "Create Reward",
+    "editTitle": "🏆 Edit Reward",
+    "editAction": "Edit reward",
+    "deleteAction": "Delete reward",
+    "deleteConfirm": "Delete this reward?"
   },
   "household": {
     "subtitle": "Manage your household party",

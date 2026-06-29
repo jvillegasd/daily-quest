@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getProfile } from '@/lib/auth/get-profile'
 import { tasksService } from '@/lib/services/tasks.service'
 import { db } from '@/lib/db/implementation'
-import { TASK_ACTION, POINTS_TYPE } from '@/lib/types'
+import { ROLE, TASK_ACTION, POINTS_TYPE } from '@/lib/types'
 import { parseBody, TaskPatchSchema } from '@/lib/validation/schemas'
 
 async function authorize(taskId: string, householdId: string) {
@@ -29,6 +29,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ task, levelUp })
   }
   if (action === TASK_ACTION.SKIP) return NextResponse.json({ task: await tasksService.skip(id) })
+  if (profile.role !== ROLE.ADMIN) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const updates = { ...rest, ...(dueAt !== undefined ? { dueAt: dueAt ? new Date(dueAt) : null } : {}) }
   return NextResponse.json({ task: await tasksService.update(id, updates) })
 }
@@ -37,6 +38,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const profile = await getProfile()
   if (!profile?.householdId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
+  if (profile.role !== ROLE.ADMIN) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const { error } = await authorize(id, profile.householdId)
   if (error) return error
   await tasksService.delete(id)

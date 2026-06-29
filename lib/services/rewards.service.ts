@@ -25,6 +25,7 @@ export const rewardsService = {
   async claim(rewardId: string, claimedById: string, householdId: string) {
     const reward = await db.rewards.findById(rewardId)
     if (!reward) throw new AppError('Reward not found')
+    if (reward.householdId !== householdId) throw new AppError('Forbidden', 403)
 
     if (reward.repeatable) {
       const lastClaim = await db.rewards.getLastClaim(rewardId, claimedById)

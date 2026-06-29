@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Check, SkipForward } from 'lucide-react'
+import { Plus, Check, SkipForward, Pencil, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ActionTooltip } from '@/components/ui/action-tooltip'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
@@ -13,7 +14,7 @@ import { Avatar } from '@/components/layout/avatar'
 import { useTranslation } from '@/lib/i18n/use-translation'
 import { useLevelUp } from '@/components/level-up-toast'
 import { hexToRgba } from '@/lib/utils/color'
-import { TASK_STATUS, TASK_TYPE, POINTS_TYPE, TASK_FILTER, TASK_ACTION, FORM_DEFAULTS, type TaskFilter } from '@/lib/types'
+import { ROLE, TASK_STATUS, TASK_TYPE, POINTS_TYPE, TASK_FILTER, TASK_ACTION, FORM_DEFAULTS, type TaskFilter } from '@/lib/types'
 import type { Profile, Task, Category } from '@/lib/types'
 import { API } from '@/lib/constants'
 import { ANIMATION, CONFETTI } from '@/lib/constants'
@@ -54,7 +55,9 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [filter, setFilter] = useState<TaskFilter>(TASK_FILTER.ALL)
   const [categoryFilter, setCategoryFilter] = useState('')
+  const isAdmin = profile.role === ROLE.ADMIN
   const [showCreate, setShowCreate] = useState(false)
+  const [editing, setEditing] = useState<Task | null>(null)
   const [celebrating, setCelebrating] = useState(false)
   const [loading, setLoading] = useState<string | null>(null)
 
@@ -75,23 +78,61 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
     return true
   }).filter((task) => !categoryFilter || task.categoryId === categoryFilter)
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
-    const res = await fetch(API.TASKS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        points: Number(form.points),
-        assignedToId: form.assignedToId || null,
-        dueAt: form.dueAt || null,
-        recurrenceRule: form.type === TASK_TYPE.RECURRING ? form.recurrenceRule : null,
-      }),
+  function blankForm() {
+    return { title: '', description: '', categoryId: categories[0]?.id ?? '', points: FORM_DEFAULTS.TASK.points, pointsType: FORM_DEFAULTS.TASK.pointsType, type: FORM_DEFAULTS.TASK.type, assignedToId: '', dueAt: '', recurrenceRule: '' }
+  }
+
+  function toDateInput(value: Date | string | null) {
+    if (!value) return ''
+    const d = new Date(value)
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+  }
+
+  function editTask(task: Task) {
+    setEditing(task)
+    setForm({
+      title: task.title,
+      description: task.description ?? '',
+      categoryId: task.categoryId,
+      points: task.points,
+      pointsType: task.pointsType,
+      type: task.type,
+      assignedToId: task.assignedToId ?? '',
+      dueAt: toDateInput(task.dueAt),
+      recurrenceRule: task.recurrenceRule ?? '',
     })
-    const { task } = await res.json()
-    setTasks((prev) => [task, ...prev])
+  }
+
+  function closeForm() {
     setShowCreate(false)
-    setForm({ title: '', description: '', categoryId: categories[0]?.id ?? '', points: FORM_DEFAULTS.TASK.points, pointsType: FORM_DEFAULTS.TASK.pointsType, type: FORM_DEFAULTS.TASK.type, assignedToId: '', dueAt: '', recurrenceRule: '' })
+    setEditing(null)
+    setForm(blankForm())
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    const body = {
+      ...form,
+      points: Number(form.points),
+      assignedToId: form.assignedToId || null,
+      dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : null,
+      recurrenceRule: form.type === TASK_TYPE.RECURRING ? form.recurrenceRule : null,
+    }
+    const res = await fetch(editing ? API.TASK(editing.id) : API.TASKS, {
+      method: editing ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) return
+    const { task } = await res.json()
+    setTasks((prev) => editing ? prev.map((t) => t.id === task.id ? task : t) : [task, ...prev])
+    closeForm()
+  }
+
+  async function handleDelete(taskId: string) {
+    if (!confirm(t('quests.deleteConfirm'))) return
+    const res = await fetch(API.TASK(taskId), { method: 'DELETE' })
+    if (res.ok) setTasks((prev) => prev.filter((task) => task.id !== taskId))
   }
 
   async function handleComplete(taskId: string) {
@@ -139,9 +180,11 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
           <h1 className="font-quest text-2xl font-bold text-fg">{t('quests.title')}</h1>
           <p className="text-fg-muted text-sm">{t('quests.questsAwait', { count: tasks.filter((task) => task.status === TASK_STATUS.PENDING).length })}</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} size="sm">
-          <Plus size={14} /> {t('quests.newQuest')}
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => setShowCreate(true)} size="sm">
+            <Plus size={14} /> {t('quests.newQuest')}
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -233,30 +276,37 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
                     </div>
                   </div>
 
-                  {task.status === TASK_STATUS.PENDING && (
-                    <div className="flex gap-1.5 shrink-0">
-                      <Button
-                        variant="emerald" size="sm"
-                        onClick={() => handleComplete(task.id)}
-                        loading={loading === task.id}
-                        title="Complete"
-                      >
-                        <Check size={14} />
-                      </Button>
-                      <Button
-                        variant="ghost" size="sm"
-                        onClick={() => handleSkip(task.id)}
-                        loading={loading === task.id}
-                        title="Skip"
-                      >
-                        <SkipForward size={14} />
-                      </Button>
-                    </div>
-                  )}
-
-                  {task.status === TASK_STATUS.DONE && (
-                    <Badge variant="emerald">{t('quests.done')}</Badge>
-                  )}
+                  <div className="flex gap-1.5 shrink-0">
+                    {task.status === TASK_STATUS.PENDING && (
+                      <>
+                        <ActionTooltip label={t('quests.completeAction')}>
+                          <Button variant="emerald" size="sm" onClick={() => handleComplete(task.id)} loading={loading === task.id} aria-label={t('quests.completeAction')}>
+                            <Check size={14} />
+                          </Button>
+                        </ActionTooltip>
+                        <ActionTooltip label={t('quests.skipAction')}>
+                          <Button variant="ghost" size="sm" onClick={() => handleSkip(task.id)} loading={loading === task.id} aria-label={t('quests.skipAction')}>
+                            <SkipForward size={14} />
+                          </Button>
+                        </ActionTooltip>
+                      </>
+                    )}
+                    {isAdmin && (
+                      <>
+                        <ActionTooltip label={t('quests.editAction')}>
+                          <Button variant="outline" size="sm" onClick={() => editTask(task)} aria-label={t('quests.editAction')}>
+                            <Pencil size={14} />
+                          </Button>
+                        </ActionTooltip>
+                        <ActionTooltip label={t('quests.deleteAction')}>
+                          <Button variant="danger" size="sm" onClick={() => handleDelete(task.id)} aria-label={t('quests.deleteAction')}>
+                            <Trash2 size={14} />
+                          </Button>
+                        </ActionTooltip>
+                      </>
+                    )}
+                    {task.status === TASK_STATUS.DONE && <Badge variant="emerald">{t('quests.done')}</Badge>}
+                  </div>
                 </div>
               </Card>
             </motion.div>
@@ -265,8 +315,8 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
       </AnimatePresence>
 
       {/* Create Quest Modal */}
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title={t('quests.createTitle')}>
-        <form onSubmit={handleCreate} className="space-y-3">
+      <Modal open={showCreate || !!editing} onClose={closeForm} title={editing ? t('quests.editTitle') : t('quests.createTitle')}>
+        <form onSubmit={handleSave} className="space-y-3">
           <Input label={t('quests.questTitleLabel')} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('quests.questTitlePlaceholder')} required />
           <Input label={t('quests.descriptionLabel')} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={t('quests.descriptionPlaceholder')} />
 
@@ -300,8 +350,8 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
           <Input label={t('quests.dueDateLabel')} type="datetime-local" value={form.dueAt} onChange={(e) => setForm({ ...form, dueAt: e.target.value })} />
 
           <div className="flex gap-2 pt-2">
-            <Button type="button" variant="ghost" className="flex-1" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
-            <Button type="submit" className="flex-1">{t('quests.createQuestBtn')}</Button>
+            <Button type="button" variant="ghost" className="flex-1" onClick={closeForm}>{t('common.cancel')}</Button>
+            <Button type="submit" className="flex-1">{editing ? t('common.save') : t('quests.createQuestBtn')}</Button>
           </div>
         </form>
       </Modal>
