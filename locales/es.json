@@ -72,6 +72,7 @@
     "filterMine": "Mis Misiones",
     "filterOpen": "Abiertas",
     "filterDone": "Completadas",
+    "filterSkipped": "Omitidas",
     "allCategories": "Todas las Categorías",
     "noQuestsFound": "No se encontraron misiones",
     "noQuestsSubtitle": "Crea una nueva misión para comenzar tu aventura",

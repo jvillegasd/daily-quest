@@ -17,7 +17,7 @@ export const TASK_STATUS = { PENDING: 'PENDING', DONE: 'DONE', SKIPPED: 'SKIPPED
 export const POINTS_TYPE = { PERSONAL: 'PERSONAL', SHARED: 'SHARED' } as const satisfies Record<string, PointsType>
 export const REWARD_TYPE = { VIRTUAL: 'VIRTUAL', PLEDGE: 'PLEDGE' } as const satisfies Record<string, RewardType>
 
-export const TASK_FILTER = { ALL: 'all', MINE: 'mine', OPEN: 'open', DONE: 'done' } as const
+export const TASK_FILTER = { ALL: 'all', MINE: 'mine', OPEN: 'open', DONE: 'done', SKIPPED: 'skipped' } as const
 export type TaskFilter = typeof TASK_FILTER[keyof typeof TASK_FILTER]
 
 export const TASK_ACTION = { COMPLETE: 'complete', SKIP: 'skip' } as const

@@ -75,6 +75,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
     if (filter === TASK_FILTER.MINE) return task.assignedToId === profile.id && task.status === TASK_STATUS.PENDING
     if (filter === TASK_FILTER.OPEN) return !task.assignedToId && task.status === TASK_STATUS.PENDING
     if (filter === TASK_FILTER.DONE) return task.status === TASK_STATUS.DONE
+    if (filter === TASK_FILTER.SKIPPED) return task.status === TASK_STATUS.SKIPPED
     return true
   }).filter((task) => !categoryFilter || task.categoryId === categoryFilter)
 
@@ -169,6 +170,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
     [TASK_FILTER.MINE]: t('quests.filterMine'),
     [TASK_FILTER.OPEN]: t('quests.filterOpen'),
     [TASK_FILTER.DONE]: t('quests.filterDone'),
+    [TASK_FILTER.SKIPPED]: t('quests.filterSkipped'),
   }
 
   return (
