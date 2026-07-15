@@ -67,6 +67,7 @@ model Household {
   name           String
   inviteCode     String   @unique @default(cuid())
   sharedPoints   Int      @default(0)
+  timezone       String   @default("UTC")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -145,6 +146,7 @@ model Task {
   recurrenceRule String?
   dueAt          DateTime?
   completedAt    DateTime?
+  recurrenceGeneratedAt DateTime?
   status         TaskStatus @default(PENDING)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt

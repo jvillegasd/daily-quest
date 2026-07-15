@@ -2,6 +2,7 @@ import { prisma } from './prisma'
 import type { Database } from './index'
 import { DEFAULT_CATEGORIES, getLevelFromPoints } from '@/lib/types'
 import { TIME } from '@/lib/constants'
+import { AppError } from '@/lib/errors'
 
 export const db: Database = {
   households: {
@@ -11,8 +12,11 @@ export const db: Database = {
     async findByInviteCode(code) {
       return prisma.household.findUnique({ where: { inviteCode: code } })
     },
-    async create(name) {
-      return prisma.household.create({ data: { name } })
+    async create(name, timezone) {
+      return prisma.household.create({ data: { name, timezone } })
+    },
+    async updateTimezone(id, timezone) {
+      return prisma.household.update({ where: { id }, data: { timezone } })
     },
     async addSharedPoints(id, points) {
       return prisma.household.update({
@@ -127,16 +131,24 @@ export const db: Database = {
       })
     },
     async complete(taskId, userId) {
-      return prisma.task.update({
-        where: { id: taskId },
-        data: { status: 'DONE', completedById: userId, completedAt: new Date() },
-        include: { category: true },
+      return prisma.$transaction(async (tx) => {
+        const completedAt = new Date()
+        const result = await tx.task.updateMany({
+          where: { id: taskId, status: 'PENDING' },
+          data: { status: 'DONE', completedById: userId, completedAt },
+        })
+        if (!result.count) throw new AppError('Quest is no longer pending', 409)
+        return tx.task.findUniqueOrThrow({ where: { id: taskId }, include: { category: true } })
       })
     },
     async skip(taskId) {
-      return prisma.task.update({
-        where: { id: taskId },
-        data: { status: 'SKIPPED' },
+      return prisma.$transaction(async (tx) => {
+        const result = await tx.task.updateMany({
+          where: { id: taskId, status: 'PENDING' },
+          data: { status: 'SKIPPED' },
+        })
+        if (!result.count) throw new AppError('Quest is no longer pending', 409)
+        return tx.task.findUniqueOrThrow({ where: { id: taskId } })
       })
     },
     async delete(id) {
@@ -147,6 +159,39 @@ export const db: Database = {
       return prisma.task.findMany({
         where: { householdId, status: 'PENDING', dueAt: { lte: deadline } },
         include: { assignedTo: true },
+      })
+    },
+    async findCompletedRecurring() {
+      return prisma.task.findMany({
+        where: { type: 'RECURRING', status: 'DONE', recurrenceGeneratedAt: null },
+        include: { household: { select: { timezone: true } } },
+      })
+    },
+    async generateRecurringSuccessor(taskId, generatedAt) {
+      return prisma.$transaction(async (tx) => {
+        const source = await tx.task.findUnique({ where: { id: taskId } })
+        if (!source) return null
+        const claimed = await tx.task.updateMany({
+          where: { id: taskId, type: 'RECURRING', status: 'DONE', recurrenceGeneratedAt: null },
+          data: { recurrenceGeneratedAt: generatedAt },
+        })
+        if (!claimed.count) return null
+        return tx.task.create({
+          data: {
+            householdId: source.householdId,
+            categoryId: source.categoryId,
+            createdById: source.createdById,
+            assignedToId: source.assignedToId,
+            title: source.title,
+            description: source.description,
+            points: source.points,
+            pointsType: source.pointsType,
+            type: source.type,
+            recurrenceRule: source.recurrenceRule,
+            dueAt: null,
+          },
+          include: { category: true, assignedTo: true },
+        })
       })
     },
   },

@@ -21,13 +21,18 @@ import { ANIMATION, CONFETTI } from '@/lib/constants'
 import { formatDistanceToNow } from 'date-fns'
 import { es as esLocale } from 'date-fns/locale'
 import { SUPPORTED_LOCALES } from '@/lib/i18n/locale-context'
+import { buildRecurrenceRule, parseSupportedRecurrenceRule } from '@/lib/utils/recurrence'
+import type { RecurrenceFrequency, RecurrenceSchedule } from '@/lib/utils/recurrence'
 
 interface Props {
   profile: Profile
   initialTasks: Task[]
   categories: Category[]
   members: Profile[]
+  householdTimezone: string
 }
+
+const DEFAULT_RECURRENCE: RecurrenceSchedule = { frequency: 'WEEKLY', time: '09:00', weekday: 1 }
 
 function Confetti() {
   return (
@@ -49,7 +54,7 @@ function Confetti() {
   )
 }
 
-export function QuestsClient({ profile, initialTasks, categories, members }: Props) {
+export function QuestsClient({ profile, initialTasks, categories, members, householdTimezone }: Props) {
   const { locale, t } = useTranslation()
   const { triggerLevelUp } = useLevelUp()
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
@@ -60,15 +65,34 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
   const [editing, setEditing] = useState<Task | null>(null)
   const [celebrating, setCelebrating] = useState(false)
   const [loading, setLoading] = useState<string | null>(null)
+  const [formError, setFormError] = useState('')
+  const [recurrence, setRecurrence] = useState<RecurrenceSchedule>(DEFAULT_RECURRENCE)
+  const [customRecurrence, setCustomRecurrence] = useState<string | null>(null)
+
+  function weekdayName(day: number) {
+    return new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 7 + day)))
+  }
+
+  const recurrenceSummary = (() => {
+    if (customRecurrence !== null) return t('quests.recurrenceCustomHint')
+    if (recurrence.frequency === 'DAILY') return t('quests.recurrenceDailySummary', { time: recurrence.time })
+    if (recurrence.frequency === 'WEEKDAYS') return t('quests.recurrenceWeekdaysSummary', { time: recurrence.time })
+    if (recurrence.frequency === 'WEEKLY') {
+      const day = weekdayName(recurrence.weekday ?? 1)
+      return t('quests.recurrenceWeeklySummary', { day, time: recurrence.time })
+    }
+    const day = recurrence.monthDay === 'L' ? t('quests.recurrenceLastDay').toLocaleLowerCase(locale) : (recurrence.monthDay ?? 1)
+    return t('quests.recurrenceMonthlySummary', { day, time: recurrence.time })
+  })()
 
   const [form, setForm] = useState<{
     title: string; description: string; categoryId: string
     points: number; pointsType: string; type: string
-    assignedToId: string; dueAt: string; recurrenceRule: string
+    assignedToId: string; dueAt: string
   }>({
     title: '', description: '', categoryId: categories[0]?.id ?? '',
     points: FORM_DEFAULTS.TASK.points, pointsType: FORM_DEFAULTS.TASK.pointsType, type: FORM_DEFAULTS.TASK.type,
-    assignedToId: '', dueAt: '', recurrenceRule: '',
+    assignedToId: '', dueAt: '',
   })
 
   const filtered = tasks.filter((task) => {
@@ -80,7 +104,7 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
   }).filter((task) => !categoryFilter || task.categoryId === categoryFilter)
 
   function blankForm() {
-    return { title: '', description: '', categoryId: categories[0]?.id ?? '', points: FORM_DEFAULTS.TASK.points, pointsType: FORM_DEFAULTS.TASK.pointsType, type: FORM_DEFAULTS.TASK.type, assignedToId: '', dueAt: '', recurrenceRule: '' }
+    return { title: '', description: '', categoryId: categories[0]?.id ?? '', points: FORM_DEFAULTS.TASK.points, pointsType: FORM_DEFAULTS.TASK.pointsType, type: FORM_DEFAULTS.TASK.type, assignedToId: '', dueAt: '' }
   }
 
   function toDateInput(value: Date | string | null) {
@@ -90,6 +114,9 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
   }
 
   function editTask(task: Task) {
+    const parsedRecurrence = parseSupportedRecurrenceRule(task.recurrenceRule ?? '')
+    setRecurrence(parsedRecurrence ?? DEFAULT_RECURRENCE)
+    setCustomRecurrence(task.type === TASK_TYPE.RECURRING && !parsedRecurrence ? (task.recurrenceRule ?? '') : null)
     setEditing(task)
     setForm({
       title: task.title,
@@ -100,7 +127,6 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
       type: task.type,
       assignedToId: task.assignedToId ?? '',
       dueAt: toDateInput(task.dueAt),
-      recurrenceRule: task.recurrenceRule ?? '',
     })
   }
 
@@ -108,6 +134,9 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
     setShowCreate(false)
     setEditing(null)
     setForm(blankForm())
+    setRecurrence(DEFAULT_RECURRENCE)
+    setCustomRecurrence(null)
+    setFormError('')
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -117,14 +146,19 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
       points: Number(form.points),
       assignedToId: form.assignedToId || null,
       dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : null,
-      recurrenceRule: form.type === TASK_TYPE.RECURRING ? form.recurrenceRule : null,
+      recurrenceRule: form.type === TASK_TYPE.RECURRING
+        ? (customRecurrence !== null ? customRecurrence : buildRecurrenceRule(recurrence))
+        : null,
     }
     const res = await fetch(editing ? API.TASK(editing.id) : API.TASKS, {
       method: editing ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-    if (!res.ok) return
+    if (!res.ok) {
+      setFormError(t('quests.saveFailed'))
+      return
+    }
     const { task } = await res.json()
     setTasks((prev) => editing ? prev.map((t) => t.id === task.id ? task : t) : [task, ...prev])
     closeForm()
@@ -143,7 +177,9 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: TASK_ACTION.COMPLETE }),
     })
-    const { task, levelUp } = await res.json()
+    const data = await res.json()
+    if (!res.ok) { setLoading(null); return }
+    const { task, levelUp } = data
     setTasks((prev) => prev.map((item) => item.id === taskId ? task : item))
     if (levelUp) triggerLevelUp(levelUp)
     setCelebrating(true)
@@ -333,7 +369,58 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
           </div>
 
           {form.type === TASK_TYPE.RECURRING && (
-            <Input label={t('quests.recurrenceLabel')} value={form.recurrenceRule} onChange={(e) => setForm({ ...form, recurrenceRule: e.target.value })} placeholder={t('quests.recurrencePlaceholder')} />
+            <div className="space-y-3 rounded-lg border border-border bg-bg-elevated p-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Select
+                  label={t('quests.recurrenceFrequency')}
+                  value={customRecurrence !== null ? 'CUSTOM' : recurrence.frequency}
+                  onChange={(e) => {
+                    if (e.target.value === 'CUSTOM') return
+                    const frequency = e.target.value as RecurrenceFrequency
+                    setCustomRecurrence(null)
+                    setRecurrence({
+                      frequency,
+                      time: recurrence.time,
+                      ...(frequency === 'WEEKLY' ? { weekday: recurrence.weekday ?? 1 } : {}),
+                      ...(frequency === 'MONTHLY' ? { monthDay: recurrence.monthDay ?? 1 } : {}),
+                    })
+                  }}
+                >
+                  {customRecurrence !== null && <option value="CUSTOM">{t('quests.recurrenceCustom')}</option>}
+                  <option value="DAILY">{t('quests.recurrenceDaily')}</option>
+                  <option value="WEEKDAYS">{t('quests.recurrenceWeekdays')}</option>
+                  <option value="WEEKLY">{t('quests.recurrenceWeekly')}</option>
+                  <option value="MONTHLY">{t('quests.recurrenceMonthly')}</option>
+                </Select>
+                {customRecurrence === null && (
+                  <Input label={t('quests.recurrenceTime')} type="time" value={recurrence.time} onChange={(e) => setRecurrence({ ...recurrence, time: e.target.value })} required />
+                )}
+              </div>
+
+              {customRecurrence === null && recurrence.frequency === 'WEEKLY' && (
+                <Select label={t('quests.recurrenceWeekday')} value={recurrence.weekday ?? 1} onChange={(e) => setRecurrence({ ...recurrence, weekday: Number(e.target.value) })}>
+                  {Array.from({ length: 7 }, (_, day) => (
+                    <option key={day} value={day}>
+                      {weekdayName(day)}
+                    </option>
+                  ))}
+                </Select>
+              )}
+
+              {customRecurrence === null && recurrence.frequency === 'MONTHLY' && (
+                <Select
+                  label={t('quests.recurrenceMonthDay')}
+                  value={recurrence.monthDay ?? 1}
+                  onChange={(e) => setRecurrence({ ...recurrence, monthDay: e.target.value === 'L' ? 'L' : Number(e.target.value) })}
+                >
+                  {Array.from({ length: 28 }, (_, day) => <option key={day + 1} value={day + 1}>{day + 1}</option>)}
+                  <option value="L">{t('quests.recurrenceLastDay')}</option>
+                </Select>
+              )}
+
+              <p className="text-xs text-fg-muted">{recurrenceSummary}</p>
+              {customRecurrence === null && <p className="text-xs text-fg-muted">{t('quests.recurrenceTimezone', { timezone: householdTimezone })}</p>}
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
@@ -350,6 +437,8 @@ export function QuestsClient({ profile, initialTasks, categories, members }: Pro
           </Select>
 
           <Input label={t('quests.dueDateLabel')} type="datetime-local" value={form.dueAt} onChange={(e) => setForm({ ...form, dueAt: e.target.value })} />
+
+          {formError && <p className="text-sm text-ruby">{formError}</p>}
 
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="ghost" className="flex-1" onClick={closeForm}>{t('common.cancel')}</Button>

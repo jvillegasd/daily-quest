@@ -7,11 +7,12 @@ export default async function QuestsPage() {
   const profile = await getProfile()
   if (!profile?.householdId) redirect('/login')
 
-  const [tasks, categories, members] = await Promise.all([
+  const [tasks, categories, members, household] = await Promise.all([
     db.tasks.findByHousehold(profile.householdId),
     db.categories.findByHousehold(profile.householdId),
     db.profiles.findByHousehold(profile.householdId),
+    db.households.findById(profile.householdId),
   ])
 
-  return <QuestsClient profile={profile} initialTasks={tasks} categories={categories} members={members} />
+  return <QuestsClient profile={profile} initialTasks={tasks} categories={categories} members={members} householdTimezone={household!.timezone} />
 }

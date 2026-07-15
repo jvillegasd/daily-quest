@@ -41,7 +41,7 @@ function SignupForm() {
     const res = await fetch('/api/households', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: householdName }),
+      body: JSON.stringify({ name: householdName, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
     })
     if (!res.ok) { setError(t('auth.householdFailed')); setLoading(false); return }
     window.location.href = '/dashboard'

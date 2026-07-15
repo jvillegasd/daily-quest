@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Trash2, Send, Pencil } from 'lucide-react'
+import { Plus, Trash2, Send, Pencil, Clock } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,7 +36,21 @@ export function HouseholdClient({ profile, household, members: initialMembers, c
   const [editForm, setEditForm] = useState({ name: '', icon: '', color: '', defaultPoints: 10 })
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [transferringAdminId, setTransferringAdminId] = useState<string | null>(null)
+  const [timezone, setTimezone] = useState(household.timezone)
+  const [savingTimezone, setSavingTimezone] = useState(false)
   const isAdmin = myRole === ROLE.ADMIN
+
+  async function handleSaveTimezone(e: React.FormEvent) {
+    e.preventDefault()
+    setSavingTimezone(true)
+    const res = await fetch(API.HOUSEHOLDS, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ timezone }),
+    })
+    if (!res.ok) setTimezone(household.timezone)
+    setSavingTimezone(false)
+  }
 
   async function handleTransferAdmin(targetProfileId: string) {
     if (!isAdmin || targetProfileId === profile.id) return
@@ -113,6 +127,30 @@ export function HouseholdClient({ profile, household, members: initialMembers, c
         <h1 className="font-quest text-2xl font-bold text-fg">🏰 {household.name}</h1>
         <p className="text-fg-muted text-sm">{t('household.subtitle')}</p>
       </div>
+
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle><Clock size={16} /> {t('household.timezoneTitle')}</CardTitle>
+          </CardHeader>
+          <form onSubmit={handleSaveTimezone} className="flex gap-2 items-end">
+            <div className="flex-1">
+              <Input
+                label={t('household.timezoneLabel')}
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                list="household-timezones"
+                required
+              />
+              <datalist id="household-timezones">
+                {Intl.supportedValuesOf('timeZone').map((zone) => <option key={zone} value={zone} />)}
+              </datalist>
+            </div>
+            <Button type="submit" loading={savingTimezone}>{t('common.save')}</Button>
+          </form>
+          <p className="text-xs text-fg-muted mt-2">{t('household.timezoneHint')}</p>
+        </Card>
+      )}
 
       {/* Members */}
       <Card>

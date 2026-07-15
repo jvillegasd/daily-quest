@@ -29,6 +29,7 @@ export interface Household {
   name: string
   inviteCode: string
   sharedPoints: number
+  timezone: string
   createdAt: Date
 }
 
@@ -72,6 +73,7 @@ export interface Task {
   recurrenceRule: string | null
   dueAt: Date | null
   completedAt: Date | null
+  recurrenceGeneratedAt: Date | null
   status: TaskStatus
   createdAt: Date
   category?: Category

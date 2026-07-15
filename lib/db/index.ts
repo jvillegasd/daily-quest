@@ -15,7 +15,8 @@ import type {
 export interface HouseholdRepository {
   findById(id: string): Promise<Household | null>
   findByInviteCode(code: string): Promise<Household | null>
-  create(name: string): Promise<Household>
+  create(name: string, timezone?: string): Promise<Household>
+  updateTimezone(id: string, timezone: string): Promise<Household>
   addSharedPoints(id: string, points: number): Promise<Household>
   deductSharedPoints(id: string, points: number): Promise<Household>
 }
@@ -54,6 +55,8 @@ export interface TaskRepository {
   skip(taskId: string): Promise<Task>
   delete(id: string): Promise<void>
   findPendingDue(householdId: string, withinHours: number): Promise<Task[]>
+  findCompletedRecurring(): Promise<(Task & { household: Pick<Household, 'timezone'> })[]>
+  generateRecurringSuccessor(taskId: string, generatedAt: Date): Promise<Task | null>
 }
 
 export interface RewardRepository {

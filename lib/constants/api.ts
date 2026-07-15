@@ -8,6 +8,7 @@ export const API = {
   CATEGORY: (id: string) => `/api/categories/${id}`,
   INVITE: '/api/invite',
   ADMIN_TRANSFER: '/api/households/admin-transfer',
+  HOUSEHOLDS: '/api/households',
   NOTIFICATIONS: '/api/notifications',
   NOTIFICATIONS_READ: '/api/notifications/read',
   NOTIFICATIONS_PREFERENCES: '/api/notifications/preferences',

@@ -7,6 +7,7 @@ import {
   REWARD_TYPE,
 } from '@/lib/types'
 import { SUPPORTED_LOCALES } from '@/lib/i18n/locales'
+import { isValidTimezone, parseSupportedRecurrenceRule } from '@/lib/utils/recurrence'
 
 /**
  * Shared validation bounds. Kept as named constants (no magic numbers) and
@@ -59,6 +60,11 @@ export const ProfilePatchSchema = z.object({
 
 export const HouseholdCreateSchema = z.object({
   name: z.string().trim().min(1).max(LIMITS.NAME_MAX),
+  timezone: z.string().refine(isValidTimezone).optional(),
+})
+
+export const HouseholdPatchSchema = z.object({
+  timezone: z.string().refine(isValidTimezone),
 })
 
 export const InviteSchema = z.object({
@@ -85,6 +91,10 @@ export const TaskCreateSchema = z.object({
   recurrenceRule: z.string().max(LIMITS.RULE_MAX).nullish(),
   dueAt: z.iso.datetime().nullish(),
   assignedToId: id.nullish(),
+}).superRefine((task, ctx) => {
+  if (task.type === TASK_TYPE.RECURRING && !parseSupportedRecurrenceRule(task.recurrenceRule ?? '')) {
+    ctx.addIssue({ code: 'custom', path: ['recurrenceRule'], message: 'Choose a valid recurrence schedule' })
+  }
 })
 
 export const TaskPatchSchema = z.object({

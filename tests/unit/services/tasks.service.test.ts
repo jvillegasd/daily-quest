@@ -9,6 +9,8 @@ vi.mock('@/lib/db/implementation', () => ({
       delete: vi.fn(),
       skip: vi.fn(),
       findByHousehold: vi.fn(),
+      findCompletedRecurring: vi.fn(),
+      generateRecurringSuccessor: vi.fn(),
     },
   },
 }))
@@ -45,6 +47,7 @@ function makeTask(overrides = {}) {
     recurrenceRule: null,
     dueAt: null,
     completedAt: null,
+    recurrenceGeneratedAt: null,
     status: 'PENDING' as const,
     createdAt: new Date(),
     ...overrides,
@@ -98,5 +101,39 @@ describe('tasksService.complete', () => {
   it('calls notificationsService.sendTaskCompleted after completing', async () => {
     await tasksService.complete('task-1', 'profile-1')
     expect(vi.mocked(notificationsService).sendTaskCompleted).toHaveBeenCalled()
+  })
+})
+
+describe('tasksService.generateDueRecurrences', () => {
+  it('generates one due successor and sends its assignment notification', async () => {
+    const source = makeTask({
+      type: 'RECURRING',
+      status: 'DONE',
+      assignedToId: 'profile-2',
+      recurrenceRule: '0 9 * * 0',
+      completedAt: new Date('2026-07-05T06:15:00Z'),
+      household: { timezone: 'America/Bogota' },
+    })
+    const successor = makeTask({ id: 'task-2', type: 'RECURRING', assignedToId: 'profile-2' })
+    vi.mocked(db.tasks.findCompletedRecurring).mockResolvedValue([source] as any)
+    vi.mocked(db.tasks.generateRecurringSuccessor).mockResolvedValue(successor as any)
+
+    const result = await tasksService.generateDueRecurrences(new Date('2026-07-05T14:00:00Z'))
+
+    expect(db.tasks.generateRecurringSuccessor).toHaveBeenCalledWith('task-1', new Date('2026-07-05T14:00:00Z'))
+    expect(notificationsService.sendTaskAssigned).toHaveBeenCalledWith(successor)
+    expect(result).toEqual({ scanned: 1, generated: 1, invalid: 0, failed: 0 })
+  })
+
+  it('does not generate before the next scheduled time', async () => {
+    vi.mocked(db.tasks.findCompletedRecurring).mockResolvedValue([makeTask({
+      type: 'RECURRING', status: 'DONE', recurrenceRule: '0 9 * * 0',
+      completedAt: new Date('2026-07-05T06:15:00Z'), household: { timezone: 'America/Bogota' },
+    })] as any)
+
+    const result = await tasksService.generateDueRecurrences(new Date('2026-07-05T13:59:00Z'))
+
+    expect(db.tasks.generateRecurringSuccessor).not.toHaveBeenCalled()
+    expect(result.generated).toBe(0)
   })
 })

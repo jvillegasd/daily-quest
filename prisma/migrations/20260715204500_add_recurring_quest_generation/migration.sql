@@ -1,0 +1,2 @@
+ALTER TABLE "Household" ADD COLUMN "timezone" TEXT NOT NULL DEFAULT 'UTC';
+ALTER TABLE "Task" ADD COLUMN "recurrenceGeneratedAt" TIMESTAMP(3);

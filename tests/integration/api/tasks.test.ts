@@ -81,6 +81,18 @@ describe('POST /api/tasks', () => {
 
     expect(res.status).toBe(403)
   })
+
+  it('rejects a recurring quest without a supported schedule', async () => {
+    const { user, profile, category } = await seedFullHousehold()
+    await prisma.profile.update({ where: { id: profile.id }, data: { role: 'ADMIN' } })
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
+
+    const res = await POST(makeRequest('POST', 'http://localhost/api/tasks', {
+      categoryId: category.id, title: 'Recurring', points: 10, pointsType: 'PERSONAL', type: 'RECURRING', recurrenceRule: '',
+    }) as any)
+
+    expect(res.status).toBe(400)
+  })
 })
 
 describe('PATCH /api/tasks/[id]', () => {
@@ -96,6 +108,16 @@ describe('PATCH /api/tasks/[id]', () => {
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data.task.status).toBe('DONE')
+  })
+
+  it('cannot complete a task twice', async () => {
+    const { user, household, profile, category } = await seedFullHousehold()
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
+    const task = await createTask(household.id, category.id, profile.id)
+    const request = () => makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { action: 'complete' })
+
+    expect((await PATCH(request() as any, { params: makeParams({ id: task.id }) })).status).toBe(200)
+    expect((await PATCH(request() as any, { params: makeParams({ id: task.id }) })).status).toBe(409)
   })
 
 
@@ -114,6 +136,23 @@ describe('PATCH /api/tasks/[id]', () => {
     await expect(prisma.task.findUniqueOrThrow({ where: { id: task.id } })).resolves.toMatchObject({ title: 'Admin edit' })
   })
 
+  it('preserves an existing custom schedule but only replaces it with a preset', async () => {
+    const { user, household, profile, category } = await seedFullHousehold()
+    await prisma.profile.update({ where: { id: profile.id }, data: { role: 'ADMIN' } })
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
+    const task = await createTask(household.id, category.id, profile.id, { type: 'RECURRING', recurrenceRule: '*/15 * * * *' })
+
+    const titleEdit = await PATCH(makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { title: 'Keep custom' }) as any, { params: makeParams({ id: task.id }) })
+    expect(titleEdit.status).toBe(200)
+    await expect(prisma.task.findUniqueOrThrow({ where: { id: task.id } })).resolves.toMatchObject({ recurrenceRule: '*/15 * * * *' })
+
+    const customReplacement = await PATCH(makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { recurrenceRule: '*/30 * * * *' }) as any, { params: makeParams({ id: task.id }) })
+    expect(customReplacement.status).toBe(400)
+
+    const presetReplacement = await PATCH(makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { recurrenceRule: '0 9 * * 0' }) as any, { params: makeParams({ id: task.id }) })
+    expect(presetReplacement.status).toBe(200)
+  })
+
   it('keeps member skip allowed', async () => {
     const { user, household, profile, category } = await seedFullHousehold()
     vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
@@ -123,6 +162,18 @@ describe('PATCH /api/tasks/[id]', () => {
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data.task.status).toBe('SKIPPED')
+  })
+
+  it('cannot skip a completed recurring occurrence', async () => {
+    const { user, household, profile, category } = await seedFullHousehold()
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
+    const task = await createTask(household.id, category.id, profile.id, { type: 'RECURRING', recurrenceRule: '0 9 * * 0' })
+    await PATCH(makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { action: 'complete' }) as any, { params: makeParams({ id: task.id }) })
+
+    const res = await PATCH(makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { action: 'skip' }) as any, { params: makeParams({ id: task.id }) })
+
+    expect(res.status).toBe(409)
+    await expect(prisma.task.findUniqueOrThrow({ where: { id: task.id } })).resolves.toMatchObject({ status: 'DONE' })
   })
 
   it('forbids cross-household edits', async () => {
