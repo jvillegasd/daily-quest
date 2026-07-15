@@ -3,6 +3,7 @@ import type { Database } from './index'
 import { DEFAULT_CATEGORIES, getLevelFromPoints } from '@/lib/types'
 import { TIME } from '@/lib/constants'
 import { AppError } from '@/lib/errors'
+import { nextRecurrenceAt } from '@/lib/server/recurrence'
 
 export const db: Database = {
   households: {
@@ -106,14 +107,14 @@ export const db: Database = {
   tasks: {
     async findByHousehold(householdId) {
       return prisma.task.findMany({
-        where: { householdId },
+        where: { householdId, availableAt: { lte: new Date() } },
         include: { category: true, assignedTo: true, completedBy: true, createdBy: true },
         orderBy: { createdAt: 'desc' },
       })
     },
     async findById(id) {
-      return prisma.task.findUnique({
-        where: { id },
+      return prisma.task.findFirst({
+        where: { id, availableAt: { lte: new Date() } },
         include: { category: true, assignedTo: true, completedBy: true, createdBy: true },
       })
     },
@@ -132,19 +133,99 @@ export const db: Database = {
     },
     async complete(taskId, userId) {
       return prisma.$transaction(async (tx) => {
+        const source = await tx.task.findUnique({
+          where: { id: taskId },
+          include: { household: { select: { timezone: true } } },
+        })
+        if (!source) throw new AppError('Quest not found', 404)
         const completedAt = new Date()
         const result = await tx.task.updateMany({
-          where: { id: taskId, status: 'PENDING' },
-          data: { status: 'DONE', completedById: userId, completedAt },
+          where: { id: taskId, status: 'PENDING', availableAt: { lte: completedAt } },
+          data: {
+            status: 'DONE',
+            completedById: userId,
+            completedAt,
+            ...(source.type === 'RECURRING' ? { recurrenceGeneratedAt: completedAt } : {}),
+          },
         })
         if (!result.count) throw new AppError('Quest is no longer pending', 409)
-        return tx.task.findUniqueOrThrow({ where: { id: taskId }, include: { category: true } })
+        const task = await tx.task.findUniqueOrThrow({ where: { id: taskId }, include: { category: true } })
+        if (source.type !== 'RECURRING') return { task, successor: null }
+
+        let availableAt: Date
+        try {
+          availableAt = nextRecurrenceAt(source.recurrenceRule ?? '', completedAt, source.household.timezone)
+        } catch {
+          throw new AppError('Recurring quest has an invalid schedule')
+        }
+        const successor = await tx.task.create({
+          data: {
+            householdId: source.householdId,
+            categoryId: source.categoryId,
+            createdById: source.createdById,
+            assignedToId: source.assignedToId,
+            title: source.title,
+            description: source.description,
+            points: source.points,
+            pointsType: source.pointsType,
+            type: source.type,
+            recurrenceRule: source.recurrenceRule,
+            availableAt,
+            dueAt: null,
+          },
+          include: { category: true, assignedTo: true },
+        })
+        return { task, successor }
       })
+    },
+    async reconcileLegacyRecurrences(householdId) {
+      const sources = await prisma.task.findMany({
+        where: { householdId, type: 'RECURRING', status: 'DONE', recurrenceGeneratedAt: null },
+        include: { household: { select: { timezone: true } } },
+      })
+      const successors = []
+      for (const source of sources) {
+        if (!source.completedAt) continue
+        let availableAt: Date
+        try {
+          availableAt = nextRecurrenceAt(source.recurrenceRule ?? '', source.completedAt, source.household.timezone)
+        } catch {
+          console.warn(`[recurrences] invalid legacy schedule for task ${source.id}`)
+          continue
+        }
+        const successor = await prisma.$transaction(async (tx) => {
+          const claimed = await tx.task.updateMany({
+            where: { id: source.id, recurrenceGeneratedAt: null },
+            data: { recurrenceGeneratedAt: new Date() },
+          })
+          if (!claimed.count) return null
+          return tx.task.create({
+            data: {
+              householdId: source.householdId,
+              categoryId: source.categoryId,
+              createdById: source.createdById,
+              assignedToId: source.assignedToId,
+              title: source.title,
+              description: source.description,
+              points: source.points,
+              pointsType: source.pointsType,
+              type: source.type,
+              recurrenceRule: source.recurrenceRule,
+              availableAt,
+              dueAt: null,
+            },
+            include: { category: true, assignedTo: true },
+          })
+        })
+        if (successor) successors.push(successor)
+      }
+      return successors
     },
     async skip(taskId) {
       return prisma.$transaction(async (tx) => {
+        const now = new Date()
         const result = await tx.task.updateMany({
-          where: { id: taskId, status: 'PENDING' },
+          where: { id: taskId, status: 'PENDING', availableAt: { lte: now } },
           data: { status: 'SKIPPED' },
         })
         if (!result.count) throw new AppError('Quest is no longer pending', 409)
@@ -157,41 +238,8 @@ export const db: Database = {
     async findPendingDue(householdId, withinHours) {
       const deadline = new Date(Date.now() + withinHours * TIME.HOUR_MS)
       return prisma.task.findMany({
-        where: { householdId, status: 'PENDING', dueAt: { lte: deadline } },
+        where: { householdId, status: 'PENDING', availableAt: { lte: new Date() }, dueAt: { lte: deadline } },
         include: { assignedTo: true },
-      })
-    },
-    async findCompletedRecurring() {
-      return prisma.task.findMany({
-        where: { type: 'RECURRING', status: 'DONE', recurrenceGeneratedAt: null },
-        include: { household: { select: { timezone: true } } },
-      })
-    },
-    async generateRecurringSuccessor(taskId, generatedAt) {
-      return prisma.$transaction(async (tx) => {
-        const source = await tx.task.findUnique({ where: { id: taskId } })
-        if (!source) return null
-        const claimed = await tx.task.updateMany({
-          where: { id: taskId, type: 'RECURRING', status: 'DONE', recurrenceGeneratedAt: null },
-          data: { recurrenceGeneratedAt: generatedAt },
-        })
-        if (!claimed.count) return null
-        return tx.task.create({
-          data: {
-            householdId: source.householdId,
-            categoryId: source.categoryId,
-            createdById: source.createdById,
-            assignedToId: source.assignedToId,
-            title: source.title,
-            description: source.description,
-            points: source.points,
-            pointsType: source.pointsType,
-            type: source.type,
-            recurrenceRule: source.recurrenceRule,
-            dueAt: null,
-          },
-          include: { category: true, assignedTo: true },
-        })
       })
     },
   },

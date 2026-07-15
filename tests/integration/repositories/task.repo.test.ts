@@ -19,7 +19,7 @@ describe('TaskRepository', () => {
     const { household, profile, category } = await seedFullHousehold()
     const task = await createTask(household.id, category.id, profile.id)
 
-    const completed = await db.tasks.complete(task.id, profile.id)
+    const { task: completed } = await db.tasks.complete(task.id, profile.id)
     expect(completed.status).toBe('DONE')
     expect(completed.completedById).toBe(profile.id)
     expect(completed.completedAt).not.toBeNull()
@@ -44,31 +44,53 @@ describe('TaskRepository', () => {
     await createTask(household.id, category.id, profile.id, {
       dueAt: new Date(Date.now() + 5 * 60 * 60 * 1000),
     })
+    const hidden = await createTask(household.id, category.id, profile.id, {
+      availableAt: new Date(Date.now() + 60 * 60 * 1000),
+      dueAt: new Date(Date.now() + 60 * 60 * 1000),
+    })
     // No due date — should NOT be found
     await createTask(household.id, category.id, profile.id)
 
     const pending = await db.tasks.findPendingDue(household.id, 2)
     expect(pending).toHaveLength(1)
+
+    await prisma.task.update({ where: { id: hidden.id }, data: { availableAt: new Date(0) } })
+    expect(await db.tasks.findPendingDue(household.id, 2)).toHaveLength(2)
   })
 
-  it('generates a recurring successor only once', async () => {
+  it('creates one hidden successor when a recurring quest is completed', async () => {
     const { household, profile, category } = await seedFullHousehold()
     const source = await createTask(household.id, category.id, profile.id, {
       type: 'RECURRING',
-      recurrenceRule: '0 9 * * 0',
-      status: 'DONE',
-      completedAt: new Date('2026-07-05T06:15:00Z'),
-      dueAt: new Date('2026-07-05T12:00:00Z'),
+      recurrenceRule: '* * * * *',
     })
 
-    const [first, second] = await Promise.all([
-      db.tasks.generateRecurringSuccessor(source.id, new Date('2026-07-05T14:00:00Z')),
-      db.tasks.generateRecurringSuccessor(source.id, new Date('2026-07-05T14:00:00Z')),
-    ])
+    const { task: completed, successor } = await db.tasks.complete(source.id, profile.id)
 
-    expect([first, second].filter(Boolean)).toHaveLength(1)
-    expect(first ?? second).toMatchObject({ status: 'PENDING', recurrenceRule: '0 9 * * 0', dueAt: null })
+    expect(successor).toMatchObject({ status: 'PENDING', recurrenceRule: '* * * * *', dueAt: null })
+    expect(successor!.availableAt.getTime()).toBeGreaterThan(completed.completedAt!.getTime())
     await expect(prisma.task.count({ where: { title: source.title } })).resolves.toBe(2)
+
+    expect(await db.tasks.findByHousehold(household.id)).toHaveLength(1)
+    await prisma.task.update({ where: { id: successor!.id }, data: { availableAt: new Date(0) } })
+    expect(await db.tasks.findByHousehold(household.id)).toHaveLength(2)
+  })
+
+  it('reconciles one legacy successor at its actual scheduled time', async () => {
+    const { household, profile, category } = await seedFullHousehold()
+    const completedAt = new Date()
+    const source = await createTask(household.id, category.id, profile.id, {
+      type: 'RECURRING',
+      recurrenceRule: '* * * * *',
+      status: 'DONE',
+      completedAt,
+    })
+
+    const [successor] = await db.tasks.reconcileLegacyRecurrences(household.id)
+
+    expect(successor.availableAt.getTime()).toBeGreaterThan(completedAt.getTime())
+    await expect(db.tasks.reconcileLegacyRecurrences(household.id)).resolves.toEqual([])
+    await expect(prisma.task.findUniqueOrThrow({ where: { id: source.id } })).resolves.not.toMatchObject({ recurrenceGeneratedAt: null })
   })
 
   it('delete removes the task', async () => {
