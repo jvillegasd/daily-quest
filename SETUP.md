@@ -118,13 +118,6 @@ The command is bundled at Docker build time from `scripts/run-cron.ts` (see the 
 It calls `runDailyNotifications()` (`lib/jobs/daily-notifications.ts`), the same job used in
 development. Push/email delivery requires `VAPID_*` and `RESEND_API_KEY` to be set.
 
-Recurring quests need a second scheduled task:
-
-- **Name:** `recurring-quests`
-- **Command:** `node scripts/run-cron.cjs recurrences`
-- **Container:** the app's running container name
-- **Frequency:** `* * * * *` (every minute)
-- **Timeout:** `300`
-
-This job creates one successor after a recurring quest is completed and its next household-local
-schedule is due. Runs are idempotent, so overlapping executions do not create duplicates.
+Recurring quests do not need a scheduled task. Completing one immediately stores its successor with
+a future `availableAt`; task queries reveal it when that timestamp arrives. The legacy
+`node scripts/run-cron.cjs recurrences` command remains as a harmless no-op during rollout.

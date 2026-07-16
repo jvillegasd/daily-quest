@@ -71,9 +71,9 @@ export interface Task {
   pointsType: PointsType
   type: TaskType
   recurrenceRule: string | null
+  availableAt: Date
   dueAt: Date | null
   completedAt: Date | null
-  recurrenceGeneratedAt: Date | null
   status: TaskStatus
   createdAt: Date
   category?: Category

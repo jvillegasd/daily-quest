@@ -9,8 +9,7 @@ vi.mock('@/lib/db/implementation', () => ({
       delete: vi.fn(),
       skip: vi.fn(),
       findByHousehold: vi.fn(),
-      findCompletedRecurring: vi.fn(),
-      generateRecurringSuccessor: vi.fn(),
+      reconcileLegacyRecurrences: vi.fn(),
     },
   },
 }))
@@ -30,8 +29,9 @@ import { tasksService } from '@/lib/services/tasks.service'
 import { db } from '@/lib/db/implementation'
 import { notificationsService } from '@/lib/services/notifications.service'
 import { pointsService } from '@/lib/services/points.service'
+import type { Task } from '@/lib/types'
 
-function makeTask(overrides = {}) {
+function makeTask(overrides: Partial<Task> = {}): Task {
   return {
     id: 'task-1',
     householdId: 'hh-1',
@@ -45,9 +45,9 @@ function makeTask(overrides = {}) {
     pointsType: 'PERSONAL' as const,
     type: 'ONE_OFF' as const,
     recurrenceRule: null,
+    availableAt: new Date(),
     dueAt: null,
     completedAt: null,
-    recurrenceGeneratedAt: null,
     status: 'PENDING' as const,
     createdAt: new Date(),
     ...overrides,
@@ -55,8 +55,23 @@ function makeTask(overrides = {}) {
 }
 
 beforeEach(() => {
-  vi.mocked(db.tasks.create).mockResolvedValue(makeTask() as any)
-  vi.mocked(db.tasks.complete).mockResolvedValue(makeTask({ status: 'DONE' }) as any)
+  vi.mocked(db.tasks.reconcileLegacyRecurrences).mockResolvedValue([])
+  vi.mocked(db.tasks.findByHousehold).mockResolvedValue([])
+  vi.mocked(db.tasks.create).mockResolvedValue(makeTask() as never)
+  vi.mocked(db.tasks.complete).mockResolvedValue({ task: makeTask({ status: 'DONE' }), successor: null } as never)
+})
+
+describe('tasksService.getByHousehold', () => {
+  it('reconciles legacy recurrences before returning visible tasks', async () => {
+    const successor = makeTask({ id: 'task-2', type: 'RECURRING', assignedToId: 'profile-2' })
+    vi.mocked(db.tasks.reconcileLegacyRecurrences).mockResolvedValue([successor] as never)
+
+    await tasksService.getByHousehold('hh-1')
+
+    expect(db.tasks.reconcileLegacyRecurrences).toHaveBeenCalledWith('hh-1')
+    expect(notificationsService.sendTaskAssigned).toHaveBeenCalledWith(successor)
+    expect(db.tasks.findByHousehold).toHaveBeenCalledWith('hh-1')
+  })
 })
 
 describe('tasksService.create', () => {
@@ -81,7 +96,7 @@ describe('tasksService.create', () => {
 
   it('sends assignment notification when assignedToId is set', async () => {
     const assignedTask = makeTask({ assignedToId: 'profile-2' })
-    vi.mocked(db.tasks.create).mockResolvedValue(assignedTask as any)
+    vi.mocked(db.tasks.create).mockResolvedValue(assignedTask as never)
     await tasksService.create({ householdId: 'hh-1', categoryId: 'cat-1', createdById: 'p1', title: 'Task', points: 10, pointsType: 'PERSONAL', type: 'ONE_OFF', assignedToId: 'profile-2' })
     expect(vi.mocked(notificationsService).sendTaskAssigned).toHaveBeenCalledTimes(1)
   })
@@ -102,38 +117,13 @@ describe('tasksService.complete', () => {
     await tasksService.complete('task-1', 'profile-1')
     expect(vi.mocked(notificationsService).sendTaskCompleted).toHaveBeenCalled()
   })
-})
 
-describe('tasksService.generateDueRecurrences', () => {
-  it('generates one due successor and sends its assignment notification', async () => {
-    const source = makeTask({
-      type: 'RECURRING',
-      status: 'DONE',
-      assignedToId: 'profile-2',
-      recurrenceRule: '0 9 * * 0',
-      completedAt: new Date('2026-07-05T06:15:00Z'),
-      household: { timezone: 'America/Bogota' },
-    })
+  it('sends the normal assignment notification for the scheduled successor', async () => {
     const successor = makeTask({ id: 'task-2', type: 'RECURRING', assignedToId: 'profile-2' })
-    vi.mocked(db.tasks.findCompletedRecurring).mockResolvedValue([source] as any)
-    vi.mocked(db.tasks.generateRecurringSuccessor).mockResolvedValue(successor as any)
+    vi.mocked(db.tasks.complete).mockResolvedValue({ task: makeTask({ status: 'DONE' }), successor } as never)
 
-    const result = await tasksService.generateDueRecurrences(new Date('2026-07-05T14:00:00Z'))
+    await tasksService.complete('task-1', 'profile-1')
 
-    expect(db.tasks.generateRecurringSuccessor).toHaveBeenCalledWith('task-1', new Date('2026-07-05T14:00:00Z'))
     expect(notificationsService.sendTaskAssigned).toHaveBeenCalledWith(successor)
-    expect(result).toEqual({ scanned: 1, generated: 1, invalid: 0, failed: 0 })
-  })
-
-  it('does not generate before the next scheduled time', async () => {
-    vi.mocked(db.tasks.findCompletedRecurring).mockResolvedValue([makeTask({
-      type: 'RECURRING', status: 'DONE', recurrenceRule: '0 9 * * 0',
-      completedAt: new Date('2026-07-05T06:15:00Z'), household: { timezone: 'America/Bogota' },
-    })] as any)
-
-    const result = await tasksService.generateDueRecurrences(new Date('2026-07-05T13:59:00Z'))
-
-    expect(db.tasks.generateRecurringSuccessor).not.toHaveBeenCalled()
-    expect(result.generated).toBe(0)
   })
 })

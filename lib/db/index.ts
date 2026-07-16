@@ -51,12 +51,11 @@ export interface TaskRepository {
   findById(id: string): Promise<Task | null>
   create(data: CreateTaskInput): Promise<Task>
   update(id: string, data: Partial<CreateTaskInput>): Promise<Task>
-  complete(taskId: string, userId: string): Promise<Task>
+  complete(taskId: string, userId: string): Promise<{ task: Task; successor: Task | null }>
+  reconcileLegacyRecurrences(householdId: string): Promise<Task[]>
   skip(taskId: string): Promise<Task>
   delete(id: string): Promise<void>
   findPendingDue(householdId: string, withinHours: number): Promise<Task[]>
-  findCompletedRecurring(): Promise<(Task & { household: Pick<Household, 'timezone'> })[]>
-  generateRecurringSuccessor(taskId: string, generatedAt: Date): Promise<Task | null>
 }
 
 export interface RewardRepository {

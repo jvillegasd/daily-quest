@@ -13,11 +13,11 @@ One actionable instance of a Quest, with its own pending, completed, or skipped 
 _Avoid_: Run, copy
 
 **Recurring Quest**:
-A chain of Quest Occurrences where completing one occurrence makes one successor eligible at the next recurrence time.
+A chain of Quest Occurrences where completing one occurrence schedules one successor.
 _Avoid_: Repeating Task, cron job
 
 **Recurrence Schedule**:
-The household-local pattern that determines when a completed Recurring Quest's successor appears.
+The household-local pattern that determines when a Recurring Quest's scheduled successor becomes available.
 _Avoid_: Cron expression in product copy
 
 **Household Timezone**:

@@ -113,11 +113,31 @@ describe('PATCH /api/tasks/[id]', () => {
   it('cannot complete a task twice', async () => {
     const { user, household, profile, category } = await seedFullHousehold()
     vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
-    const task = await createTask(household.id, category.id, profile.id)
+    const task = await createTask(household.id, category.id, profile.id, { type: 'RECURRING', recurrenceRule: '* * * * *' })
     const request = () => makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { action: 'complete' })
 
-    expect((await PATCH(request() as any, { params: makeParams({ id: task.id }) })).status).toBe(200)
-    expect((await PATCH(request() as any, { params: makeParams({ id: task.id }) })).status).toBe(409)
+    const responses = await Promise.all([
+      PATCH(request() as any, { params: makeParams({ id: task.id }) }),
+      PATCH(request() as any, { params: makeParams({ id: task.id }) }),
+    ])
+
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 409])
+    await expect(prisma.task.count({ where: { title: task.title } })).resolves.toBe(2)
+  })
+
+  it('cannot complete or skip an occurrence before it is available', async () => {
+    const { user, household, profile, category } = await seedFullHousehold()
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as any)
+    const task = await createTask(household.id, category.id, profile.id, {
+      availableAt: new Date(Date.now() + 60 * 60 * 1000),
+    })
+
+    const complete = await PATCH(makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { action: 'complete' }) as any, { params: makeParams({ id: task.id }) })
+    const skip = await PATCH(makeRequest('PATCH', `http://localhost/api/tasks/${task.id}`, { action: 'skip' }) as any, { params: makeParams({ id: task.id }) })
+
+    expect(complete.status).toBe(404)
+    expect(skip.status).toBe(404)
+    await expect(prisma.task.findUniqueOrThrow({ where: { id: task.id } })).resolves.toMatchObject({ status: 'PENDING' })
   })
 
 
