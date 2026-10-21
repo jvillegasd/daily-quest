@@ -54,7 +54,7 @@ Daily Quest is a **gamified household task manager** built for roommates, couple
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 24+
 - PostgreSQL database (or a [Supabase](https://supabase.com) project)
 
 ### Installation
