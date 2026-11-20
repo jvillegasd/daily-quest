@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { auth } from '@/auth'
 import { GET } from '@/app/api/notifications/route'
 import { POST as POST_READ } from '@/app/api/notifications/read/route'
+import { POST as POST_PREFS } from '@/app/api/notifications/preferences/route'
 import { notificationsService } from '@/lib/services/notifications.service'
 import { useTestDb } from '../helpers/db'
 import { makeRequest } from '../helpers/route-caller'
@@ -64,6 +65,44 @@ describe('GET /api/notifications + POST /api/notifications/read', () => {
   it('returns 401 when unauthenticated', async () => {
     vi.mocked(auth).mockResolvedValue(null as never)
     const res = await GET()
+    expect(res.status).toBe(401)
+  })
+})
+
+describe('POST /api/notifications/preferences', () => {
+  useTestDb()
+
+  it('saves a valid preference for the caller', async () => {
+    const { user, profile } = await seedFullHousehold()
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as never)
+
+    const req = makeRequest('POST', 'http://localhost/api/notifications/preferences', { eventType: 'TASK_ASSIGNED', enabled: false })
+    const res = await POST_PREFS(req as any)
+    expect(res.status).toBe(200)
+
+    const pref = await prisma.notificationPreference.findUnique({
+      where: { profileId_eventType: { profileId: profile.id, eventType: 'TASK_ASSIGNED' } },
+    })
+    expect(pref?.enabled).toBe(false)
+  })
+
+  it('returns 400 and saves nothing for invalid input', async () => {
+    const { user, profile } = await seedFullHousehold()
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as never)
+
+    for (const body of [{ eventType: 'NOT_AN_EVENT' }, { eventType: 'TASK_ASSIGNED', dailyDigestTime: 'soon' }]) {
+      const res = await POST_PREFS(makeRequest('POST', 'http://localhost/api/notifications/preferences', body) as any)
+      expect(res.status).toBe(400)
+    }
+    const badJson = new Request('http://localhost/api/notifications/preferences', { method: 'POST', body: '{not json' })
+    expect((await POST_PREFS(badJson)).status).toBe(400)
+
+    expect(await prisma.notificationPreference.count({ where: { profileId: profile.id } })).toBe(0)
+  })
+
+  it('returns 401 when unauthenticated', async () => {
+    vi.mocked(auth).mockResolvedValue(null as never)
+    const res = await POST_PREFS(makeRequest('POST', 'http://localhost/api/notifications/preferences', { eventType: 'TASK_ASSIGNED' }) as any)
     expect(res.status).toBe(401)
   })
 })
