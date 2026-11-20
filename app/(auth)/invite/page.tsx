@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { useTranslation } from '@/lib/i18n/use-translation'
+import { API } from '@/lib/constants/api'
 
 function GoogleIcon() {
   return (
@@ -35,7 +36,7 @@ function InviteForm() {
 
   useEffect(() => {
     if (token) {
-      fetch(`/api/invite/validate?token=${token}`)
+      fetch(`${API.INVITE_VALIDATE}?token=${encodeURIComponent(token)}`)
         .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
         .then(({ ok, d }) => { ok && d.householdName ? setHouseholdName(d.householdName) : setError(t('auth.invalidInvite')) })
     }

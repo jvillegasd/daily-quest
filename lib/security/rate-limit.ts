@@ -57,13 +57,14 @@ export function rateLimit(key: string, limit: number, windowMs: number): boolean
 }
 
 /**
- * Extracts the client IP from proxy headers (Coolify / nginx set
- * `x-forwarded-for`). Falls back to a constant bucket when unavailable.
+ * Extracts the client IP used as the rate-limit key from `cf-connecting-ip`,
+ * which Cloudflare overwrites on every request. `x-forwarded-for` and
+ * `x-real-ip` are ignored because clients can set them. This relies on the
+ * origin firewall accepting traffic from Cloudflare alone; requests without
+ * the header (local dev, internal calls) share one bucket.
  */
 export function clientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0].trim()
-  return request.headers.get('x-real-ip')?.trim() || 'unknown'
+  return request.headers.get('cf-connecting-ip')?.trim() || 'unknown'
 }
 
 export function tooManyRequests(): NextResponse {

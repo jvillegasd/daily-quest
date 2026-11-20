@@ -6,7 +6,7 @@ import { Sun, Moon, LogOut, Trash2 } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, LevelBadge } from '@/components/layout/avatar'
-import { signOut } from 'next-auth/react'
+import { signIn, signOut } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n/use-translation'
 import { SUPPORTED_LOCALES } from '@/lib/i18n/locale-context'
 import type { Locale } from '@/lib/i18n/locale-context'
@@ -22,9 +22,13 @@ const ALL_EVENTS: NotificationEvent[] = [
 interface Props {
   profile: Profile
   notificationPrefs: NotificationPreference[]
+  googleLinked: boolean
+  linkMismatch: boolean
 }
 
-export function SettingsClient({ profile, notificationPrefs }: Props) {
+export function SettingsClient({ profile, notificationPrefs, googleLinked, linkMismatch }: Props) {
+  const [linking, setLinking] = useState(false)
+  const [linkError, setLinkError] = useState(linkMismatch ? 'settings.linkGoogleMismatch' : '')
   const { theme, setTheme } = useTheme()
   const { locale, setLocale, t } = useTranslation()
   const [mounted, setMounted] = useState(false)
@@ -60,6 +64,14 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ locale: l }),
     })
+  }
+
+  async function handleLinkGoogle() {
+    setLinking(true)
+    setLinkError('')
+    const res = await fetch(API.LINK_GOOGLE, { method: 'POST' })
+    if (!res.ok) { setLinkError('settings.linkGoogleFailed'); setLinking(false); return }
+    await signIn('google', { callbackUrl: ROUTES.SETTINGS })
   }
 
   async function handleSignOut() {
@@ -178,6 +190,24 @@ export function SettingsClient({ profile, notificationPrefs }: Props) {
             </label>
           ))}
         </div>
+      </Card>
+
+      {/* Sign-in methods */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('settings.signInMethodsTitle')}</CardTitle>
+        </CardHeader>
+        {googleLinked ? (
+          <p className="text-sm text-fg-muted">{t('settings.googleLinked')}</p>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-fg-muted">{t('settings.linkGoogleDescription')}</p>
+            {linkError && <p className="text-sm text-ruby">{t(linkError)}</p>}
+            <Button variant="outline" className="w-full" onClick={handleLinkGoogle} loading={linking}>
+              {t('settings.linkGoogle')}
+            </Button>
+          </div>
+        )}
       </Card>
 
       {/* Sign out */}

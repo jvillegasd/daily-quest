@@ -6,4 +6,12 @@ export const ROUTES = {
   QUESTS: '/quests',
   REWARDS: '/rewards',
   INVITE: '/invite',
+  SETTINGS: '/settings',
 }
+
+/** `?error=` values the Google sign-in callback redirects with. */
+export const AUTH_ERROR = {
+  UNVERIFIED_EMAIL: 'unverified-email',
+  LINK_REQUIRED: 'link-required',
+  LINK_MISMATCH: 'link-mismatch',
+} as const

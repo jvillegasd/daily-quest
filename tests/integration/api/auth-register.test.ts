@@ -43,4 +43,22 @@ describe('POST /api/auth/register', () => {
     const res = await POST(req2 as any)
     expect(res.status).toBe(409)
   })
+
+  it('refuses to add a password to an existing OAuth-only user', async () => {
+    const victim = await prisma.user.create({ data: { email: 'victim@test.com', name: 'Victim' } })
+    await prisma.account.create({
+      data: { userId: victim.id, type: 'oidc', provider: 'google', providerAccountId: 'google-sub-1' },
+    })
+
+    const req = makeRequest('POST', 'http://localhost/api/auth/register', {
+      email: 'victim@test.com',
+      password: 'attacker-pass',
+      name: 'Attacker',
+    })
+    const res = await POST(req as any)
+    expect(res.status).toBe(409)
+
+    const credentials = await prisma.account.findFirst({ where: { userId: victim.id, provider: 'credentials' } })
+    expect(credentials).toBeNull()
+  })
 })

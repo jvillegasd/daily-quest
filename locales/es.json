@@ -48,7 +48,9 @@
     "joinHouseholdFailed": "Error al unirse al hogar",
     "inviteEmailHint": "Esta invitación de un solo uso expira después de 7 días o al usarse. Escribe el correo que quieres para tu cuenta de Daily Quest, o usa Google arriba.",
     "inviteSignedInHint": "Ya iniciaste sesión. Acepta la invitación para unirte a este hogar.",
-    "invalidInvite": "Esta invitación no es válida, expiró o ya fue usada."
+    "invalidInvite": "Esta invitación no es válida, expiró o ya fue usada.",
+    "linkRequired": "Este correo ya tiene una cuenta con contraseña. Inicia sesión con tu contraseña y luego vincula Google en Ajustes.",
+    "unverifiedEmail": "Google no ha verificado este correo, así que no se puede usar para iniciar sesión."
   },
   "dashboard": {
     "kingdomOf": "Reino de",
@@ -204,7 +206,13 @@
     "deleteConfirmTitle": "¿Estás completamente seguro?",
     "cancel": "Cancelar",
     "deleteConfirmYes": "Sí, eliminar todo",
-    "deleting": "Eliminando…"
+    "deleting": "Eliminando…",
+    "signInMethodsTitle": "Métodos de Inicio de Sesión",
+    "googleLinked": "✓ Google está vinculado a esta cuenta.",
+    "linkGoogleDescription": "Vincula tu cuenta de Google para iniciar sesión con Google además de tu contraseña. Debe usar el mismo correo que esta cuenta.",
+    "linkGoogle": "Vincular Google",
+    "linkGoogleFailed": "No se pudo iniciar la vinculación. Inténtalo de nuevo.",
+    "linkGoogleMismatch": "Esa cuenta de Google usa otro correo, o su correo ya está en uso. Vincula una cuenta de Google con el mismo correo que esta cuenta."
   },
   "levels": {
     "novice": "Novato",

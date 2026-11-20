@@ -5,6 +5,7 @@ import {
   TASK_STATUS,
   TASK_ACTION,
   REWARD_TYPE,
+  type NotificationEvent,
 } from '@/lib/types'
 import { SUPPORTED_LOCALES } from '@/lib/i18n/locales'
 import { isValidTimezone, parseSupportedRecurrenceRule } from '@/lib/utils/recurrence'
@@ -26,6 +27,7 @@ const LIMITS = {
   POINTS_MAX: 1_000_000,
   COOLDOWN_HOURS_MAX: 8760,
   IDS_MAX: 200,
+  REMINDER_HOURS_MAX: 168,
 } as const
 
 // IDs are Prisma cuid()s; ownership is enforced separately via authorize(), so
@@ -157,6 +159,23 @@ export const CategoryPatchSchema = z.object({
 // unread notifications as read.
 export const NotificationReadSchema = z.object({
   ids: z.array(id).max(LIMITS.IDS_MAX).optional(),
+})
+
+const NOTIFICATION_EVENTS = [
+  'TASK_PENDING',
+  'TASK_COMPLETED_BY_PARTNER',
+  'REWARD_CLAIMED',
+  'TASK_ASSIGNED',
+  'POINTS_MILESTONE',
+  'DAILY_SUMMARY',
+] as const satisfies readonly NotificationEvent[]
+
+export const NotificationPreferenceSchema = z.object({
+  eventType: z.enum(NOTIFICATION_EVENTS),
+  enabled: z.boolean().optional(),
+  // 24-hour HH:MM
+  dailyDigestTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+  reminderHoursBefore: z.number().int().min(0).max(LIMITS.REMINDER_HOURS_MAX).optional(),
 })
 
 /**

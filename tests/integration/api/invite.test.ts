@@ -30,7 +30,7 @@ describe('POST /api/invite', () => {
     await createProfile(user.id, household.id, { role: 'ADMIN', displayName: 'Hero' })
     vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as never)
 
-    const req = makeRequest('POST', 'http://localhost/api/invite', { email: 'friend@test.com' }, { 'x-forwarded-for': '1.1.1.1' })
+    const req = makeRequest('POST', 'http://localhost/api/invite', { email: 'friend@test.com' }, { 'cf-connecting-ip': '1.1.1.1' })
     const res = await sendInvite(req as never)
     const invitation = await prisma.invitation.findFirstOrThrow({ where: { email: 'friend@test.com' } })
 
@@ -55,7 +55,7 @@ describe('POST /api/invite', () => {
     await createProfile(user.id, household.id, { role: 'ADMIN' })
     vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as never)
 
-    const req = makeRequest('POST', 'http://localhost/api/invite', { email: 'friend@test.com' }, { 'x-forwarded-for': '3.3.3.3' })
+    const req = makeRequest('POST', 'http://localhost/api/invite', { email: 'friend@test.com' }, { 'cf-connecting-ip': '3.3.3.3' })
     const res = await sendInvite(req as never)
     const data = await res.json()
 
@@ -70,7 +70,7 @@ describe('POST /api/invite', () => {
     await createProfile(user.id, household.id, { role: 'MEMBER' })
     vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as never)
 
-    const req = makeRequest('POST', 'http://localhost/api/invite', { email: 'friend@test.com' }, { 'x-forwarded-for': '2.2.2.2' })
+    const req = makeRequest('POST', 'http://localhost/api/invite', { email: 'friend@test.com' }, { 'cf-connecting-ip': '2.2.2.2' })
     const res = await sendInvite(req as never)
 
     expect(res.status).toBe(403)
@@ -79,7 +79,7 @@ describe('POST /api/invite', () => {
 
   it('rejects old household inviteCode links', async () => {
     const household = await createHousehold()
-    const req = makeRequest('GET', `http://localhost/api/invite/validate?token=${household.inviteCode}`, undefined, { 'x-forwarded-for': '4.4.4.4' })
+    const req = makeRequest('GET', `http://localhost/api/invite/validate?token=${household.inviteCode}`, undefined, { 'cf-connecting-ip': '4.4.4.4' })
     const res = await validateInvite(req as never)
 
     expect(res.status).toBe(404)
@@ -99,7 +99,7 @@ describe('POST /api/invite', () => {
     })
     vi.mocked(auth).mockResolvedValue({ user: { id: user.id }, expires: '' } as never)
 
-    const req = () => makeRequest('POST', 'http://localhost/api/invite/accept', { token: invitation.token }, { 'x-forwarded-for': '5.5.5.5' })
+    const req = () => makeRequest('POST', 'http://localhost/api/invite/accept', { token: invitation.token }, { 'cf-connecting-ip': '5.5.5.5' })
     const first = await acceptInvite(req() as never)
     const second = await acceptInvite(req() as never)
 

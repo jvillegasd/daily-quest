@@ -1,15 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { useTranslation } from '@/lib/i18n/use-translation'
+import { AUTH_ERROR } from '@/lib/constants'
 
-export default function LoginPage() {
+const ERROR_MESSAGE_KEYS: Record<string, string> = {
+  [AUTH_ERROR.LINK_REQUIRED]: 'auth.linkRequired',
+  [AUTH_ERROR.UNVERIFIED_EMAIL]: 'auth.unverifiedEmail',
+}
+
+function LoginForm() {
   const { t } = useTranslation()
+  const params = useSearchParams()
+  const callbackErrorKey = ERROR_MESSAGE_KEYS[params.get('error') ?? '']
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -49,6 +58,8 @@ export default function LoginPage() {
         <div className="h-px flex-1 bg-border" />
       </div>
 
+      {callbackErrorKey && <p className="text-sm text-ruby mb-4">{t(callbackErrorKey)}</p>}
+
       <form onSubmit={handleEmailLogin} className="space-y-4">
         <Input label={t('auth.emailLabel')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('auth.emailPlaceholder')} required />
         <Input label={t('auth.passwordLabel')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('auth.passwordPlaceholder')} required />
@@ -63,5 +74,18 @@ export default function LoginPage() {
         <Link href="/signup" className="text-gold hover:text-gold-bright font-semibold">{t('auth.createOne')}</Link>
       </p>
     </Card>
+  )
+}
+
+function LoadingFallback() {
+  const { t } = useTranslation()
+  return <div className="text-center text-fg-muted">{t('common.loading')}</div>
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <LoginForm />
+    </Suspense>
   )
 }
