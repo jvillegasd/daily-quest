@@ -37,6 +37,17 @@ describe('authConfig.callbacks.authorized', () => {
       expect(result).toBe(true)
     })
 
+    it('allows /api/invite/validate so invitees can see the household name', async () => {
+      const result = await authorized(makeParams(false, '/api/invite/validate', '?token=abc'))
+      expect(result).toBe(true)
+    })
+
+    it('keeps other invite APIs protected', async () => {
+      expect(await authorized(makeParams(false, '/api/invite'))).toBe(false)
+      expect(await authorized(makeParams(false, '/api/invite/accept'))).toBe(false)
+      expect(await authorized(makeParams(false, '/api/invite/validate/extra'))).toBe(false)
+    })
+
     it('blocks access to /dashboard', async () => {
       const result = await authorized(makeParams(false, '/dashboard'))
       expect(result).toBe(false)

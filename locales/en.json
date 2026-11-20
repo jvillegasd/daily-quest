@@ -48,7 +48,9 @@
     "joinHouseholdFailed": "Failed to join household",
     "inviteEmailHint": "This one-time invite expires after 7 days or after it is used. Enter the email you want for your Daily Quest account, or use Google above.",
     "inviteSignedInHint": "You are signed in. Accept the invitation to join this household.",
-    "invalidInvite": "This invitation is invalid, expired, or already used."
+    "invalidInvite": "This invitation is invalid, expired, or already used.",
+    "linkRequired": "This email already has a password account. Sign in with your password, then link Google in Settings.",
+    "unverifiedEmail": "Google has not verified this email address, so it cannot be used to sign in."
   },
   "dashboard": {
     "kingdomOf": "Kingdom of",
@@ -204,7 +206,13 @@
     "deleteConfirmTitle": "Are you absolutely sure?",
     "cancel": "Cancel",
     "deleteConfirmYes": "Yes, delete everything",
-    "deleting": "Deleting…"
+    "deleting": "Deleting…",
+    "signInMethodsTitle": "Sign-in Methods",
+    "googleLinked": "✓ Google is linked to this account.",
+    "linkGoogleDescription": "Link your Google account to sign in with Google as well as your password. It must use the same email as this account.",
+    "linkGoogle": "Link Google",
+    "linkGoogleFailed": "Could not start linking. Please try again.",
+    "linkGoogleMismatch": "That Google account uses a different email, or its email is already taken. Link a Google account with the same email as this account."
   },
   "levels": {
     "novice": "Novice",

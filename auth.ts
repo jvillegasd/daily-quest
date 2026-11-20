@@ -4,6 +4,9 @@ import Credentials from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/db/prisma'
 import bcrypt from 'bcryptjs'
 import { authConfig } from './auth.config'
+import { cookies } from 'next/headers'
+import { decideOAuthSignIn, linkIntentSecret, verifyLinkIntent, LINK_INTENT_COOKIE } from '@/lib/auth/oauth-linking'
+import { AUTH_ERROR, ROUTES } from '@/lib/constants'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -32,8 +35,42 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (!user.email) return false
+
+      // Never attach an OAuth identity to an existing user by email alone: that
+      // user may be a password account registered by someone else with this
+      // email. Linking needs a link intent the signed-in user created in Settings.
+      if (account && account.provider !== 'credentials') {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+          select: {
+            id: true,
+            accounts: {
+              where: { provider: account.provider, providerAccountId: account.providerAccountId },
+              select: { id: true },
+            },
+          },
+        })
+
+        // The intent is single-use: read it, then clear it whatever the outcome.
+        const cookieStore = await cookies()
+        const intentToken = cookieStore.get(LINK_INTENT_COOKIE)?.value
+        if (intentToken) cookieStore.delete({ name: LINK_INTENT_COOKIE, path: '/api/auth/callback' })
+        const secret = linkIntentSecret()
+        const linkIntentUserId =
+          account.provider === 'google' && secret ? verifyLinkIntent(intentToken, Date.now(), secret) : null
+
+        const decision = decideOAuthSignIn({
+          providerEmailVerified: profile?.email_verified === true,
+          existingUserId: existingUser?.id ?? null,
+          alreadyLinked: (existingUser?.accounts.length ?? 0) > 0,
+          linkIntentUserId,
+        })
+        if (decision === 'unverified') return `${ROUTES.LOGIN}?error=${AUTH_ERROR.UNVERIFIED_EMAIL}`
+        if (decision === 'not-linked') return `${ROUTES.LOGIN}?error=${AUTH_ERROR.LINK_REQUIRED}`
+        if (decision === 'link-mismatch') return `${ROUTES.SETTINGS}?error=${AUTH_ERROR.LINK_MISMATCH}`
+      }
 
       // Upsert user by email — preserves the existing DB id if the email already exists
       await prisma.user.upsert({

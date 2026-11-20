@@ -14,19 +14,9 @@ export async function POST(request: Request) {
 
   const existing = await prisma.user.findUnique({ where: { email } })
 
-  if (existing) {
-    // Email exists — allow only if it's a Google-only user adding a password for the first time
-    const credAccount = await prisma.account.findFirst({
-      where: { userId: existing.id, provider: 'credentials' },
-    })
-    if (credAccount) return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
-
-    const hash = await bcrypt.hash(password, 12)
-    await prisma.account.create({
-      data: { userId: existing.id, type: 'credentials', provider: 'credentials', providerAccountId: email, passwordHash: hash },
-    })
-    return NextResponse.json({ ok: true }, { status: 200 })
-  }
+  // Never attach a password to an existing user: this route is unauthenticated,
+  // so doing so would let anyone take over an account by knowing its email.
+  if (existing) return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
 
   const hash = await bcrypt.hash(password, 12)
   const user = await prisma.user.create({ data: { email, name } })

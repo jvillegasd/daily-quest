@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from 'next-auth'
 import { ROUTES } from '@/lib/constants/routes'
+import { API } from '@/lib/constants/api'
 
 // Edge-safe config — no Node.js-only imports (no Prisma, no pg, no bcrypt)
 export const authConfig: NextAuthConfig = {
@@ -14,7 +15,10 @@ export const authConfig: NextAuthConfig = {
       const isInvite = nextUrl.pathname.startsWith(ROUTES.INVITE)
       const isPublicPath =
         nextUrl.pathname === '/' ||
-        nextUrl.pathname.startsWith('/privacy')
+        nextUrl.pathname.startsWith('/privacy') ||
+        // Signed-out invitees must see the household name before signing up.
+        // Exact match: the route is rate-limited and only reveals that name.
+        nextUrl.pathname === API.INVITE_VALIDATE
 
       const isAuthPath =
         nextUrl.pathname.startsWith(ROUTES.LOGIN) ||

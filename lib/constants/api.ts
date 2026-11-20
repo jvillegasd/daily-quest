@@ -7,10 +7,12 @@ export const API = {
   CATEGORIES: '/api/categories',
   CATEGORY: (id: string) => `/api/categories/${id}`,
   INVITE: '/api/invite',
+  INVITE_VALIDATE: '/api/invite/validate',
   ADMIN_TRANSFER: '/api/households/admin-transfer',
   HOUSEHOLDS: '/api/households',
   NOTIFICATIONS: '/api/notifications',
   NOTIFICATIONS_READ: '/api/notifications/read',
   NOTIFICATIONS_PREFERENCES: '/api/notifications/preferences',
   PROFILE: '/api/profile',
+  LINK_GOOGLE: '/api/account/link-google',
 }
