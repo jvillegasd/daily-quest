@@ -57,10 +57,20 @@ export function rateLimit(key: string, limit: number, windowMs: number): boolean
 }
 
 /**
- * Extracts the client IP from proxy headers (Coolify / nginx set
- * `x-forwarded-for`). Falls back to a constant bucket when unavailable.
+ * Extracts the client IP used as the rate-limit key.
+ *
+ * With `TRUST_PROXY=cloudflare`, only `cf-connecting-ip` is trusted: Cloudflare
+ * overwrites it on every request, while the first `x-forwarded-for` entry is
+ * whatever the client sent. Enable it only when the origin firewall accepts
+ * traffic from Cloudflare alone, or anyone could set the header directly.
+ *
+ * Otherwise falls back to the first `x-forwarded-for` entry (spoofable), then
+ * `x-real-ip`, then a constant bucket.
  */
 export function clientIp(request: Request): string {
+  if (process.env.TRUST_PROXY === 'cloudflare') {
+    return request.headers.get('cf-connecting-ip')?.trim() || 'unknown'
+  }
   const forwarded = request.headers.get('x-forwarded-for')
   if (forwarded) return forwarded.split(',')[0].trim()
   return request.headers.get('x-real-ip')?.trim() || 'unknown'
